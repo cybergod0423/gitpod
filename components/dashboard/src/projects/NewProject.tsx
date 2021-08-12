@@ -18,6 +18,7 @@ import NoAccess from "../icons/NoAccess.svg";
 import search from "../icons/search.svg";
 import moment from "moment";
 import { UserContext } from "../user-context";
+import { trackEvent, trackButton } from "../Analytics";
 
 export default function NewProject() {
     const location = useLocation();
@@ -128,6 +129,10 @@ export default function NewProject() {
             account: selectedAccount,
             onSuccess: (p: { installationId: string, setupAction?: string }) => {
                 updateReposInAccounts(p.installationId);
+                trackEvent("organisation_authorised",{
+                    installation_id: p.installationId,
+                    setup_action: p.setupAction
+                });
             }
         });
     }
@@ -165,7 +170,6 @@ export default function NewProject() {
             ...(User.is(teamOrUser) ? { userId: teamOrUser.id } : { teamId: teamOrUser.id }),
             appInstallationId: String(repo.installationId),
         });
-
         history.push(`/${User.is(teamOrUser) ? 'projects' : teamOrUser.slug}/${repo.name}/configure`);
     }
 
@@ -186,7 +190,7 @@ export default function NewProject() {
             <span className={"pl-2 text-gray-600 dark:text-gray-100 text-base " + (addClasses || "")}>{label}</span>
         </div>)
         const result: ContextMenuEntry[] = [];
-        for (const [ account, props ] of accounts.entries()) {
+        for (const [account, props] of accounts.entries()) {
             result.push({
                 title: account,
                 customContent: renderItemContent(account, props.avatarUrl, "font-semibold"),
@@ -199,13 +203,19 @@ export default function NewProject() {
                 title: "Add another GitHub account",
                 customContent: renderItemContent("Add GitHub Orgs or Account", Plus),
                 separator: true,
-                onClick: () => reconfigure(),
+                onClick: () => {
+                    trackButton("/new","add_organisation","dropdown");
+                    reconfigure();
+                }
             })
         }
         result.push({
             title: "Select another Git Provider to continue with",
             customContent: renderItemContent("Select Git Provider", Switch),
-            onClick: () => setShowGitProviders(true),
+            onClick: () => {
+                trackButton("/new","select_git_provider","dropdown");
+                setShowGitProviders(true);
+            },
         })
 
         return result;
@@ -250,7 +260,11 @@ export default function NewProject() {
                                     <div className="flex justify-end">
                                         <div className="h-full my-auto flex self-center opacity-0 group-hover:opacity-100">
                                             {!r.inUse ? (
-                                                <button className="primary" onClick={() => setSelectedRepo(r.name)}>Select</button>
+                                                <button className="primary" onClick={() => {
+                                                    trackButton("/new","select_project","primary_button");
+                                                    setSelectedRepo(r.name);
+                                                }
+                                                }>Select</button>
                                             ) : (
                                                 <p className="my-auto">already taken</p>
                                             )}
@@ -337,7 +351,11 @@ export default function NewProject() {
                     <div className="w-8/12 m-auto overflow-ellipsis truncate">{userFullName}</div>
                     <div className="w-4/12 flex justify-end">
                         <div className="flex self-center hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md cursor-pointer opacity-0 group-hover:opacity-100">
-                            <button className="primary py-1" onClick={() => setSelectedTeamOrUser(user)}>Select</button>
+                            <button className="primary py-1" onClick={() => {
+                                trackButton("/new","select_team","primary_button");
+                                setSelectedTeamOrUser(user)
+                            }
+                            }>Select</button>
                         </div>
                     </div>
                 </div>
@@ -346,7 +364,11 @@ export default function NewProject() {
                         <div className="w-8/12 m-auto overflow-ellipsis truncate">{t.name}</div>
                         <div className="w-4/12 flex justify-end">
                             <div className="flex self-center hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md cursor-pointer opacity-0 group-hover:opacity-100">
-                                <button className="primary py-1" onClick={() => setSelectedTeamOrUser(t)}>Select</button>
+                                <button className="primary py-1" onClick={() => {
+                                    trackButton("/new","select_team","primary_button");
+                                    setSelectedTeamOrUser(t)
+                                }
+                                }>Select</button>
                             </div>
                         </div>
                     </div>
@@ -419,7 +441,11 @@ function GitProviders(props: {
                 <div className="mt-6 flex flex-col space-y-3 items-center pb-8">
                     {authProviders.map(ap => {
                         return (
-                            <button key={"button" + ap.host} className="btn-login flex-none w-56 h-10 p-0 inline-flex" onClick={() => selectProvider(ap)}>
+                            <button key={"button" + ap.host} className="btn-login flex-none w-56 h-10 p-0 inline-flex" onClick={() => {
+                                trackButton("/new",simplifyProviderName(ap.host) === 'GitHub' ? "continue_with_github" : "continue_with_gitlab","primary_button");
+                                selectProvider(ap);
+                            }
+                            }>
                                 {iconForAuthProvider(ap.authProviderType)}
                                 <span className="pt-2 pb-2 mr-3 text-sm my-auto font-medium truncate overflow-ellipsis">Continue with {simplifyProviderName(ap.host)}</span>
                             </button>
@@ -463,7 +489,11 @@ function NewTeam(props: {
         <div className={props.className}>
             <div className="flex flex-row space-x-2">
                 <input type="text" className="py-1 flex-grow w-36" name="new-team-inline" value={teamName} placeholder="team-name" onChange={(e) => onTeamNameChanged(e.target.value)} />
-                <button key={`new-team-inline-create`} disabled={!teamName} onClick={() => onNewTeam()}>Create Team</button>
+                <button key={`new-team-inline-create`} disabled={!teamName} onClick={() => {
+                    trackButton("/new","create_team","primary_button");
+                    onNewTeam()
+                }
+                }>Create Team</button>
             </div>
             {error && <p className="text-gitpod-red">{error}</p>}
         </div>

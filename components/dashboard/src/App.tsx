@@ -6,7 +6,6 @@
 
 import React, { Suspense, useContext, useEffect, useState } from 'react';
 import Menu from './Menu';
-import { BrowserRouter } from "react-router-dom";
 import { Redirect, Route, Switch } from "react-router";
 
 import { Login } from './Login';
@@ -17,6 +16,8 @@ import { getGitpodService } from './service/service';
 import { shouldSeeWhatsNew, WhatsNew } from './whatsnew/WhatsNew';
 import gitpodIcon from './icons/gitpod.svg';
 import { ErrorCodes } from '@gitpod/gitpod-protocol/lib/messaging/error';
+import { useHistory } from "react-router-dom";
+import { page } from './Analytics'
 
 const Setup = React.lazy(() => import(/* webpackPrefetch: true */ './Setup'));
 const Workspaces = React.lazy(() => import(/* webpackPrefetch: true */ './workspaces/Workspaces'));
@@ -57,10 +58,11 @@ function App() {
     const { user, setUser } = useContext(UserContext);
     const { teams, setTeams } = useContext(TeamsContext);
     const { setIsDark } = useContext(ThemeContext);
+    const history = useHistory();
 
-    const [ loading, setLoading ] = useState<boolean>(true);
-    const [ isWhatsNewShown, setWhatsNewShown ] = useState(false);
-    const [ isSetupRequired, setSetupRequired ] = useState(false);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [isWhatsNewShown, setWhatsNewShown] = useState(false);
+    const [isSetupRequired, setSetupRequired] = useState(false);
 
     useEffect(() => {
         (async () => {
@@ -108,6 +110,13 @@ function App() {
             window.removeEventListener('storage', updateTheme);
         }
     }, []);
+
+    // listen and notify Segment of client-side page updates
+    useEffect(() => {
+        return history.listen((location: any) => {
+            page();
+        })
+    }, [history])
 
     if (isGitpodIo() && window.location.pathname === '/' && window.location.hash === '' && !loading && !user) {
         window.location.href = `https://www.gitpod.io`;
@@ -237,11 +246,11 @@ function App() {
                         return isGitpodIo() ?
                             // delegate to our website to handle the request
                             (window.location.host = 'www.gitpod.io') :
-                                <div className="mt-48 text-center">
-                                    <h1 className="text-gray-500 text-3xl">404</h1>
-                                    <p className="mt-4 text-lg">Page not found.</p>
-                                </div>;
-                }}>
+                            <div className="mt-48 text-center">
+                                <h1 className="text-gray-500 text-3xl">404</h1>
+                                <p className="mt-4 text-lg">Page not found.</p>
+                            </div>;
+                    }}>
                 </Route>
             </Switch>
         </div>
@@ -259,11 +268,9 @@ function App() {
     }
 
     return (
-        <BrowserRouter>
-            <Suspense fallback={<Loading />}>
-                {toRender}
-            </Suspense>
-        </BrowserRouter>
+        <Suspense fallback={<Loading />}>
+            {toRender}
+        </Suspense>
     );
 }
 

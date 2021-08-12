@@ -1496,5 +1496,16 @@ export class GitpodServerEEImpl extends GitpodServerImpl<GitpodClient, GitpodSer
             branch: branchName,
             project
         });
+        this.analytics.track({
+            userId: user.id,
+            event: "prebuild_triggered",
+            properties: {
+                context_url: contextURL,
+                clone_url: project.cloneUrl,
+                commit: context.revision,
+                branch: branchName,
+                project_id: project.id
+            }
+        });
     }
 }

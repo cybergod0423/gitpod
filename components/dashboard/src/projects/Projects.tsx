@@ -18,6 +18,7 @@ import { PrebuildInfo, Project } from "@gitpod/gitpod-protocol";
 import DropDown from "../components/DropDown";
 import { toRemoteURL } from "./render-utils";
 import ContextMenu from "../components/ContextMenu";
+import { trackButton } from "../Analytics";
 
 export default function () {
     const location = useLocation();
@@ -25,8 +26,8 @@ export default function () {
 
     const { teams } = useContext(TeamsContext);
     const team = getCurrentTeam(location, teams);
-    const [ projects, setProjects ] = useState<Project[]>([]);
-    const [ lastPrebuilds, setLastPrebuilds ] = useState<Map<string, PrebuildInfo>>(new Map());
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [lastPrebuilds, setLastPrebuilds] = useState<Map<string, PrebuildInfo>>(new Map());
 
     const { isDark } = useContext(ThemeContext);
 
@@ -77,8 +78,8 @@ export default function () {
                 <h3 className="text-center text-gray-500 mt-8">No Recent Projects</h3>
                 <p className="text-center text-base text-gray-500 mt-4">Add projects to enable and manage Prebuilds.<br /><a className="gp-link" href="https://www.gitpod.io/docs/prebuilds/">Learn more about Prebuilds</a></p>
                 <div className="flex space-x-2 justify-center mt-7">
-                    <Link to={newProjectUrl}><button>New Project</button></Link>
-                    {team && <Link to="./members"><button className="secondary">Invite Members</button></Link>}
+                    <Link to={newProjectUrl}><button onClick={() => trackButton("/projects","new_project","primary_button") }>New Project</button></Link>
+                    {team && <Link to="./members"  ><button onClick={() => trackButton("/projects","invite_members","secondary_button") } className="secondary">Invite Members</button></Link>}
                 </div>
             </div>
 
@@ -102,8 +103,12 @@ export default function () {
                             onClick: () => { /* TODO */ }
                         }]} />
                     </div>
-                    <Link to="./members" className="flex"><button className="ml-2 secondary">Invite Members</button></Link>
-                    <button className="ml-2" onClick={() => onNewProject()}>New Project</button>
+                    <Link to="./members" className="flex"><button className="ml-2 secondary" onClick={() => trackButton("/projects","invite_members","secondary_button")}>Invite Members</button></Link>
+                    <button className="ml-2" onClick={() => {
+                        trackButton("/projects","new_project","primary_button");
+                        onNewProject();
+                    }
+                }>New Project</button>
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-4">
                     {projects.map(p => (<div key={`project-${p.id}`} className="h-48">
@@ -118,7 +123,10 @@ export default function () {
                                         <ContextMenu menuEntries={[{
                                             title: "Remove Project",
                                             customFontStyle: 'text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300',
-                                            onClick: () => onRemoveProject(p)
+                                            onClick: () => {
+                                                trackButton("/<team_name>/projects","remove_project","kebab_menu");
+                                                onRemoveProject(p);
+                                            }
                                         }]} />
                                     </div>
                                 </div>
@@ -143,7 +151,7 @@ export default function () {
                     </div>))}
                     <div key="new-project"
                         className="h-48 border-dashed border-2 border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl focus:bg-gitpod-kumquat-light transition ease-in-out group">
-                        <Link to={newProjectUrl}>
+                        <Link to={newProjectUrl} onClick={() => trackButton("/<team_name>/projects","new_project","card") }>
                             <div className="flex h-full">
                                 <div className="m-auto">New Project</div>
                             </div>

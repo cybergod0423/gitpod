@@ -8,12 +8,13 @@ import { FormEvent, useContext, useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
 import { getGitpodService } from "../service/service";
 import { TeamsContext } from "./teams-context";
+import { trackButton } from "../Analytics";
 
 export default function () {
     const { setTeams } = useContext(TeamsContext);
     const history = useHistory();
 
-    const [ creationError, setCreationError ] = useState<Error>();
+    const [creationError, setCreationError] = useState<Error>();
     let name = '';
     const createTeam = async (event: FormEvent) => {
         event.preventDefault();
@@ -41,7 +42,7 @@ export default function () {
                 {!!creationError && <p className="text-gitpod-red">{creationError.message.replace(/Request \w+ failed with message: /, '')}</p>}
             </div>
             <div className="flex flex-row-reverse space-x-2 space-x-reverse mt-2">
-                <button type="submit">Create Team</button>
+                <button type="submit" onClick={() => trackButton("/teams/new","create_team","primary_button") }>Create Team</button>
                 <button className="secondary" onClick={() => history.push('/')}>Cancel</button>
             </div>
         </form>

@@ -15,6 +15,7 @@ import { getGitpodService } from "../service/service";
 import { TeamsContext, getCurrentTeam } from "../teams/teams-context";
 import { ContextMenuEntry } from "../components/ContextMenu";
 import { shortCommitMessage } from "./render-utils";
+import { trackButton } from "../Analytics";
 
 export default function () {
     const history = useHistory();
@@ -68,7 +69,10 @@ export default function () {
         });
         entries.push({
             title: "Trigger Prebuild",
-            onClick: () => triggerPrebuild(p.branch),
+            onClick: () => {
+                trackButton("/<team_name>/<project_name>/prebuilds","trigger_prebuild","kebab_menu");
+                triggerPrebuild(p.branch);
+            },
             separator: running
         });
         if (running) {
@@ -134,7 +138,11 @@ export default function () {
                 <div className="py-3 pl-3">
                     <DropDown prefix="Prebuild Status: " contextMenuWidth="w-32" entries={statusFilterEntries()} />
                 </div>
-                <button disabled={!defaultBranch} onClick={() => { defaultBranch && triggerPrebuild(defaultBranch) }} className="ml-2">Trigger Prebuild</button>
+                <button disabled={!defaultBranch} onClick={() => {
+                    trackButton("/<team_name>/<project_name>/prebuilds","trigger_prebuild","primary_button");
+                    defaultBranch && triggerPrebuild(defaultBranch);
+                }
+                } className="ml-2">Trigger Prebuild</button>
             </div>
             <ItemsList className="mt-2">
                 <Item header={true} className="grid grid-cols-3">

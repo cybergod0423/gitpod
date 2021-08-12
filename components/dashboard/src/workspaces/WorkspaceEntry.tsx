@@ -7,13 +7,14 @@
 import { CommitContext, Workspace, WorkspaceInfo, WorkspaceInstance, WorkspaceInstanceConditions, WorkspaceInstancePhase } from '@gitpod/gitpod-protocol';
 import { GitpodHostUrl } from '@gitpod/gitpod-protocol/lib/util/gitpod-host-url';
 import moment from 'moment';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { ContextMenuEntry } from '../components/ContextMenu';
 import { Item, ItemField, ItemFieldContextMenu, ItemFieldIcon } from '../components/ItemsList';
 import PendingChangesDropdown from '../components/PendingChangesDropdown';
 import Tooltip from '../components/Tooltip';
 import { WorkspaceModel } from './workspace-model';
+import { trackWorkspaceButton } from "../Analytics";
 
 function getLabel(state: WorkspaceInstancePhase, conditions?: WorkspaceInstanceConditions) {
     if (conditions?.failed) {
@@ -44,18 +45,23 @@ export function WorkspaceEntry({ desc, model, isAdmin, stopWorkspace }: Props) {
     const menuEntries: ContextMenuEntry[] = [
         {
             title: 'Open',
-            href: startUrl.toString()
+            href: startUrl.toString(),
+            onClick: () => trackWorkspaceButton(ws.id,"open","kebab_menu",state)
         }];
     if (state === 'running') {
         menuEntries.push({
             title: 'Stop',
-            onClick: () => stopWorkspace(ws.id)
+            onClick: () => {
+                trackWorkspaceButton(ws.id,"stop","kebab_menu",state);
+                stopWorkspace(ws.id);
+            }
         });
     }
     menuEntries.push(
         {
             title: 'Download',
-            href: downloadURL
+            href: downloadURL,
+            onClick: () => trackWorkspaceButton(ws.id,"download","kebab_menu",state)
         });
     if (!isAdmin) {
         menuEntries.push(
@@ -63,6 +69,7 @@ export function WorkspaceEntry({ desc, model, isAdmin, stopWorkspace }: Props) {
                 title: 'Share',
                 active: !!ws.shareable,
                 onClick: () => {
+                    trackWorkspaceButton(ws.id,"share","kebab_menu",state);
                     model.toggleShared(ws.id);
                 }
             },
@@ -71,6 +78,7 @@ export function WorkspaceEntry({ desc, model, isAdmin, stopWorkspace }: Props) {
                 active: !!ws.pinned,
                 separator: true,
                 onClick: () => {
+                    trackWorkspaceButton(ws.id,"pin","kebab_menu",state);
                     model.togglePinned(ws.id);
                 }
             },
@@ -78,6 +86,7 @@ export function WorkspaceEntry({ desc, model, isAdmin, stopWorkspace }: Props) {
                 title: 'Delete',
                 customFontStyle: 'text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300',
                 onClick: () => {
+                    trackWorkspaceButton(ws.id,"delete","kebab_menu",state);
                     setModalVisible(true);
                 }
             }
@@ -90,7 +99,7 @@ export function WorkspaceEntry({ desc, model, isAdmin, stopWorkspace }: Props) {
             <WorkspaceStatusIndicator instance={desc?.latestInstance} />
         </ItemFieldIcon>
         <ItemField className="w-3/12 flex flex-col">
-            <a href={startUrl.toString()}><div className="font-medium text-gray-800 dark:text-gray-200 truncate hover:text-blue-600 dark:hover:text-blue-400">{ws.id}</div></a>
+            <a href={startUrl.toString()} onClick= {() => trackWorkspaceButton(ws.id,"open","primary_button",state) }><div className="font-medium text-gray-800 dark:text-gray-200 truncate hover:text-blue-600 dark:hover:text-blue-400">{ws.id}</div></a>
             <a href={project ? 'https://' + project : undefined}><div className="text-sm overflow-ellipsis truncate text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400">{project || 'Unknown'}</div></a>
         </ItemField>
         <ItemField className="w-4/12 flex flex-col">

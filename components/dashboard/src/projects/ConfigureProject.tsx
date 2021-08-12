@@ -12,6 +12,7 @@ import TabMenuItem from "../components/TabMenuItem";
 import { getGitpodService } from "../service/service";
 import { getCurrentTeam, TeamsContext } from "../teams/teams-context";
 import AlertBox from "../components/AlertBox";
+import { trackButton } from "../Analytics";
 
 const MonacoEditor = React.lazy(() => import('../components/MonacoEditor'));
 
@@ -53,13 +54,13 @@ export default function () {
   const location = useLocation();
   const team = getCurrentTeam(location, teams);
   const routeMatch = useRouteMatch<{ teamSlug: string, projectSlug: string }>("/:teamSlug/:projectSlug/configure");
-  const [ project, setProject ] = useState<Project | undefined>();
-  const [ gitpodYml, setGitpodYml ] = useState<string>('');
-  const [ dockerfile, setDockerfile ] = useState<string>('');
-  const [ editorError, setEditorError ] = useState<React.ReactNode | null>(null);
-  const [ selectedEditor, setSelectedEditor ] = useState<'.gitpod.yml'|'.gitpod.Dockerfile'>('.gitpod.yml');
-  const [ isEditorDisabled, setIsEditorDisabled ] = useState<boolean>(true);
-  const [ workspaceCreationResult, setWorkspaceCreationResult ] = useState<WorkspaceCreationResult | undefined>();
+  const [project, setProject] = useState<Project | undefined>();
+  const [gitpodYml, setGitpodYml] = useState<string>('');
+  const [dockerfile, setDockerfile] = useState<string>('');
+  const [editorError, setEditorError] = useState<React.ReactNode | null>(null);
+  const [selectedEditor, setSelectedEditor] = useState<'.gitpod.yml' | '.gitpod.Dockerfile'>('.gitpod.yml');
+  const [isEditorDisabled, setIsEditorDisabled] = useState<boolean>(true);
+  const [workspaceCreationResult, setWorkspaceCreationResult] = useState<WorkspaceCreationResult | undefined>();
 
   useEffect(() => {
     // Disable editing while loading, or when the config comes from Git.
@@ -78,7 +79,7 @@ export default function () {
         const configString = await getGitpodService().server.fetchProjectRepositoryConfiguration(project.id);
         if (configString) {
           // TODO(janx): Link to .gitpod.yml directly instead of just the cloneUrl.
-          setEditorError(<span>A Gitpod configuration already exists in the project's <a className="gp-link" href={project.cloneUrl}>repository</a>.<br/>Please <a className="gp-link" href={`/#${project.cloneUrl}`}>edit it in Gitpod</a> instead.</span>);
+          setEditorError(<span>A Gitpod configuration already exists in the project's <a className="gp-link" href={project.cloneUrl}>repository</a>.<br />Please <a className="gp-link" href={`/#${project.cloneUrl}`}>edit it in Gitpod</a> instead.</span>);
           setGitpodYml(configString);
         } else {
           setIsEditorDisabled(false);
@@ -86,7 +87,7 @@ export default function () {
         }
       }
     })();
-  }, [ teams, team ]);
+  }, [teams, team]);
 
   const buildProject = async (event: React.MouseEvent) => {
     if (!project) {
@@ -98,6 +99,7 @@ export default function () {
       setWorkspaceCreationResult(undefined);
     }
     try {
+      trackButton("/<team_name>/<project_name>/configure","test_configuration","primary_button");
       await getGitpodService().server.setProjectConfiguration(project.id, gitpodYml);
       const result = await getGitpodService().server.createWorkspace({
         contextUrl: `prebuild/${project.cloneUrl}`,
@@ -119,7 +121,7 @@ export default function () {
         {editorError && <AlertBox className="mb-2">{editorError}</AlertBox>}
         {!isEditorDisabled && <select className="w-full" defaultValue="" onChange={e => setGitpodYml(e.target.value)}>
           <option value="" disabled={true}>…</option>
-          {Object.entries(TASKS).map(([ name, value ]) => <option value={value}>{name}</option>)}
+          {Object.entries(TASKS).map(([name, value]) => <option value={value}>{name}</option>)}
         </select>}
         {!!dockerfile && <div className="flex justify-center border-b border-gray-200 dark:border-gray-800">
           <TabMenuItem name=".gitpod.yml" selected={selectedEditor === '.gitpod.yml'} onClick={() => setSelectedEditor('.gitpod.yml')} />

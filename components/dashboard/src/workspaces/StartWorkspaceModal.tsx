@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import Modal from "../components/Modal";
 import TabMenuItem from "../components/TabMenuItem";
+import { trackEvent } from "../Analytics";
 
 export interface WsStartEntry {
     title: string
@@ -30,7 +31,10 @@ export function StartWorkspaceModal(p: StartWorkspaceModalProps) {
     useEffect(() => { !p.visible && setSelection(computeSelection()) }, [p.visible, p.recent, p.selected]);
 
     const list = (selection === 'Recent' ? p.recent : p.examples).map((e, i) =>
-        <a key={`item-${i}-${e.title}`} href={e.startUrl} className="rounded-xl group hover:bg-gray-100 dark:hover:bg-gray-800 flex p-4 my-1">
+        <a key={`item-${i}-${e.title}`} href={e.startUrl} onClick={() => trackEvent("workspace_new_clicked", {
+            context: selection,
+            contextUrl: e.startUrl.split('#')[1]
+        })} className="rounded-xl group hover:bg-gray-100 dark:hover:bg-gray-800 flex p-4 my-1">
             <div className="w-full">
                 <p className="text-base text-gray-800 dark:text-gray-200 font-semibold">{e.title}</p>
                 <p>{e.description}</p>

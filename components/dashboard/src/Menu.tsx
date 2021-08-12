@@ -21,6 +21,7 @@ import ContextMenu from "./components/ContextMenu";
 import Separator from "./components/Separator";
 import PillMenuItem from "./components/PillMenuItem";
 import TabMenuItem from "./components/TabMenuItem";
+import { trackButton } from "./Analytics";
 
 interface Entry {
     title: string,
@@ -49,9 +50,9 @@ export default function Menu() {
     })();
 
     function isSelected(entry: Entry, location: Location<any>) {
-        const all = [entry.link, ...(entry.alternatives||[])].map(l => l.toLowerCase());
+        const all = [entry.link, ...(entry.alternatives || [])].map(l => l.toLowerCase());
         const path = location.pathname.toLowerCase();
-        return all.some(n => n === path || n+'/' === path);
+        return all.some(n => n === path || n + '/' === path);
     }
 
     const userFullName = user?.fullName || user?.name || '...';
@@ -61,7 +62,7 @@ export default function Menu() {
     // Hide most of the top menu when in a full-page form.
     const isMinimalUI = ['/new', '/teams/new'].includes(location.pathname);
 
-    const [ teamMembers, setTeamMembers ] = useState<Record<string, TeamMemberInfo[]>>({});
+    const [teamMembers, setTeamMembers] = useState<Record<string, TeamMemberInfo[]>>({});
     useEffect(() => {
         if (!showTeamsUI || !teams) {
             return;
@@ -74,7 +75,7 @@ export default function Menu() {
             }));
             setTeamMembers(members);
         })();
-    }, [ teams ]);
+    }, [teams]);
 
     const teamOrUserSlug = !!team ? team.slug : 'projects';
     const leftMenu: Entry[] = (() => {
@@ -146,11 +147,11 @@ export default function Menu() {
     const renderTeamMenu = () => {
         return (
             <div className="flex p-1 pl-3 ">
-                { projectName && <div className="flex h-full rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1">
+                {projectName && <div className="flex h-full rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1">
                     <Link to={team ? `/${team.slug}/projects` : "/workspaces"}>
                         <span className="text-base text-gray-600 dark:text-gray-400 font-semibold">{team?.name || userFullName}</span>
                     </Link>
-                </div> }
+                </div>}
                 <div className="flex h-full rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                     <ContextMenu classes="w-64 left-0" menuEntries={[
                         {
@@ -178,7 +179,7 @@ export default function Menu() {
                         })).sort((a, b) => a.title.toLowerCase() > b.title.toLowerCase() ? 1 : -1),
                         {
                             title: 'Create a new team',
-                            customContent: <div className="w-full text-gray-400 flex items-center">
+                            customContent: <div className="w-full text-gray-400 flex items-center" onClick={() => {trackButton("menu", "new_team", "dropdown")}}>
                                 <span className="flex-1 font-semibold">New Team</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14" className="w-3.5"><path fill="currentColor" fill-rule="evenodd" d="M7 0a1 1 0 011 1v5h5a1 1 0 110 2H8v5a1 1 0 11-2 0V8H1a1 1 0 010-2h5V1a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                             </div>,
@@ -186,19 +187,19 @@ export default function Menu() {
                         }
                     ]}>
                         <div className="flex h-full px-2 py-1 space-x-3.5">
-                            { !projectName && <span className="text-base text-gray-600 dark:text-gray-400 font-semibold">{team?.name || userFullName}</span>}
-                            <img className="filter-grayscale" style={{marginTop: 5, marginBottom: 5}} src={CaretUpDown} />
+                            {!projectName && <span className="text-base text-gray-600 dark:text-gray-400 font-semibold">{team?.name || userFullName}</span>}
+                            <img className="filter-grayscale" style={{ marginTop: 5, marginBottom: 5 }} src={CaretUpDown} />
                         </div>
                     </ContextMenu>
                 </div>
-                { projectName && (
+                {projectName && (
                     <div className="flex h-full rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1">
                         <Link to={`/${teamOrUserSlug}/${projectName}${prebuildId ? "/prebuilds" : ""}`}>
                             <span className="text-base text-gray-600 dark:text-gray-400 font-semibold">{projectName}</span>
                         </Link>
                     </div>
                 )}
-                { prebuildId && (
+                {prebuildId && (
                     <div className="flex h-full ml-2 py-1">
                         <img className="mr-3 filter-grayscale m-auto transform -rotate-90" src={CaretDown} />
                         <span className="text-base text-gray-600 dark:text-gray-400 font-semibold">{prebuildId}</span>
@@ -222,7 +223,7 @@ export default function Menu() {
                                 <ul className="flex flex-1 items-center justify-between text-base text-gray-700 space-x-2">
                                     <li className="flex-1"></li>
                                     {leftMenu.map(entry => <li key={entry.title}>
-                                        <PillMenuItem name={entry.title} selected={isSelected(entry, location)} link={entry.link}/>
+                                        <PillMenuItem name={entry.title} selected={isSelected(entry, location)} link={entry.link} />
                                     </li>)}
                                 </ul>
                             </nav>
@@ -234,7 +235,7 @@ export default function Menu() {
                         <ul className="flex flex-1 items-center justify-between text-base text-gray-700 space-x-2">
                             <li className="flex-1"></li>
                             {!isMinimalUI && rightMenu.map(entry => <li key={entry.title}>
-                                <PillMenuItem name={entry.title} selected={isSelected(entry, location)} link={entry.link}/>
+                                <PillMenuItem name={entry.title} selected={isSelected(entry, location)} link={entry.link} />
                             </li>)}
                         </ul>
                     </nav>
@@ -261,7 +262,7 @@ export default function Menu() {
                 </div>
             </div>
             {!isMinimalUI && showTeamsUI && !prebuildId && <div className="flex">
-                {leftMenu.map((entry: Entry) => <TabMenuItem name={entry.title} selected={isSelected(entry, location)} link={entry.link}/>)}
+                {leftMenu.map((entry: Entry) => <TabMenuItem name={entry.title} selected={isSelected(entry, location)} link={entry.link} />)}
             </div>}
         </header>
         {showTeamsUI && <Separator />}
