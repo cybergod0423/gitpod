@@ -61,6 +61,8 @@ var ring0Cmd = &cobra.Command{
 		exitCode := 1
 		defer handleExit(&exitCode)
 
+		defer log.Info("done")
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -76,16 +78,6 @@ var ring0Cmd = &cobra.Command{
 			log.WithError(err).Fatal("cannot prepare for user namespaces")
 			return
 		}
-		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-
-			_, err = client.Teardown(ctx, &daemonapi.TeardownRequest{})
-			if err != nil {
-				log.WithError(err).Error("cannot trigger teardown")
-				return
-			}
-		}()
 
 		cmd := exec.Command("/proc/self/exe", "ring1")
 		cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -167,10 +159,11 @@ var ring1Cmd = &cobra.Command{
 	Run: func(_cmd *cobra.Command, args []string) {
 		log.Init(ServiceName, Version, true, true)
 		log := log.WithField("ring", 1)
-		defer log.Info("done")
 
 		exitCode := 1
 		defer handleExit(&exitCode)
+
+		defer log.Info("done")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -181,6 +174,16 @@ var ring1Cmd = &cobra.Command{
 			return
 		}
 		defer conn.Close()
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			_, err = client.Teardown(ctx, &daemonapi.TeardownRequest{})
+			if err != nil {
+				log.WithError(err).Error("cannot trigger teardown")
+			}
+		}()
 
 		mapping := []*daemonapi.WriteIDMappingRequest_Mapping{
 			{ContainerId: 0, HostId: 33333, Size: 1},
@@ -344,6 +347,7 @@ var ring1Cmd = &cobra.Command{
 			log.WithError(err).Error("cannot mount proc")
 			return
 		}
+
 		_, err = client.MountProc(ctx, &daemonapi.MountProcRequest{
 			Target: procLoc,
 			Pid:    int64(cmd.Process.Pid),
@@ -584,10 +588,11 @@ var ring2Cmd = &cobra.Command{
 	Run: func(_cmd *cobra.Command, args []string) {
 		log.Init(ServiceName, Version, true, true)
 		log := log.WithField("ring", 2)
-		defer log.Info("done")
 
 		exitCode := 1
 		defer handleExit(&exitCode)
+
+		defer log.Info("done")
 
 		// we talk to ring1 using a Unix socket, so that we can send the seccomp fd across.
 		rconn, err := net.Dial("unix", args[0])
@@ -596,6 +601,8 @@ var ring2Cmd = &cobra.Command{
 			return
 		}
 		conn := rconn.(*net.UnixConn)
+		defer conn.Close()
+
 		log.Info("connected to parent socket")
 
 		// Before we do anything, we wait for the parent to make /proc available to us.
@@ -632,7 +639,6 @@ var ring2Cmd = &cobra.Command{
 
 		sktfd := int(connf.Fd())
 		err = unix.Sendmsg(sktfd, nil, unix.UnixRights(int(scmpFd)), nil, 0)
-		connf.Close()
 		if err != nil {
 			log.WithError(err).Error("cannot send seccomp fd")
 			return
@@ -777,6 +783,7 @@ func connectToInWorkspaceDaemonService(ctx context.Context) (daemonapi.InWorkspa
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return daemonapi.NewInWorkspaceServiceClient(conn), conn, nil
 }
 
