@@ -63,21 +63,40 @@ var ring0Cmd = &cobra.Command{
 
 		defer log.Info("done")
 
+		// setup a timeout for ring0 execution
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		client, conn, err := connectToInWorkspaceDaemonService(ctx)
+		client, err := connectToInWorkspaceDaemonService(ctx)
 		if err != nil {
 			log.WithError(err).Error("cannot connect to daemon")
 			return
 		}
-		defer conn.Close()
 
 		prep, err := client.PrepareForUserNS(ctx, &daemonapi.PrepareForUserNSRequest{})
 		if err != nil {
 			log.WithError(err).Fatal("cannot prepare for user namespaces")
 			return
 		}
+		client.Close()
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			client, err := connectToInWorkspaceDaemonService(ctx)
+			if err != nil {
+				log.WithError(err).Error("cannot connect to daemon")
+				return
+			}
+			defer client.Close()
+
+			_, err = client.Teardown(ctx, &daemonapi.TeardownRequest{})
+			if err != nil {
+				log.WithError(err).Error("cannot trigger teardown")
+				return
+			}
+		}()
 
 		cmd := exec.Command("/proc/self/exe", "ring1")
 		cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -168,29 +187,18 @@ var ring1Cmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		client, conn, err := connectToInWorkspaceDaemonService(ctx)
-		if err != nil {
-			log.WithError(err).Error("cannot connect to daemon")
-			return
-		}
-		defer conn.Close()
-
-		defer func() {
-			log.Info("Running workspace Teardown")
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-
-			_, err = client.Teardown(ctx, &daemonapi.TeardownRequest{})
-			if err != nil {
-				log.WithError(err).Error("cannot trigger teardown")
-			}
-		}()
-
 		mapping := []*daemonapi.WriteIDMappingRequest_Mapping{
 			{ContainerId: 0, HostId: 33333, Size: 1},
 			{ContainerId: 1, HostId: 100000, Size: 65534},
 		}
 		if !ring1Opts.MappingEstablished {
+			client, err := connectToInWorkspaceDaemonService(ctx)
+			if err != nil {
+				log.WithError(err).Error("cannot connect to daemon")
+				return
+			}
+			defer client.Close()
+
 			_, err = client.WriteIDMapping(ctx, &daemonapi.WriteIDMappingRequest{Pid: int64(os.Getpid()), Gid: false, Mapping: mapping})
 			if err != nil {
 				log.WithError(err).Error("cannot establish UID mapping")
@@ -349,10 +357,18 @@ var ring1Cmd = &cobra.Command{
 			return
 		}
 
+		client, err := connectToInWorkspaceDaemonService(ctx)
+		if err != nil {
+			log.WithError(err).Error("cannot connect to daemon")
+			return
+		}
+
 		_, err = client.MountProc(ctx, &daemonapi.MountProcRequest{
 			Target: procLoc,
 			Pid:    int64(cmd.Process.Pid),
 		})
+		client.Close()
+
 		if err != nil {
 			log.WithError(err).Error("cannot mount proc")
 			return
@@ -761,8 +777,18 @@ type ringSyncMsg struct {
 	FSShift api.FSShiftMethod `json:"fsshift"`
 }
 
+type inWorkspaceServiceClient struct {
+	daemonapi.InWorkspaceServiceClient
+
+	conn *grpc.ClientConn
+}
+
+func (iwsc *inWorkspaceServiceClient) Close() error {
+	return nil
+}
+
 // ConnectToInWorkspaceDaemonService attempts to connect to the InWorkspaceService offered by the ws-daemon.
-func connectToInWorkspaceDaemonService(ctx context.Context) (daemonapi.InWorkspaceServiceClient, *grpc.ClientConn, error) {
+func connectToInWorkspaceDaemonService(ctx context.Context) (*inWorkspaceServiceClient, error) {
 	const socketFN = "/.workspace/daemon.sock"
 
 	t := time.NewTicker(500 * time.Millisecond)
@@ -776,16 +802,19 @@ func connectToInWorkspaceDaemonService(ctx context.Context) (daemonapi.InWorkspa
 		case <-t.C:
 			continue
 		case <-ctx.Done():
-			return nil, nil, fmt.Errorf("socket did not appear before context was canceled")
+			return nil, fmt.Errorf("socket did not appear before context was canceled")
 		}
 	}
 
-	conn, err := grpc.DialContext(ctx, "unix://"+socketFN, grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "unix://"+socketFN, grpc.WithBlock(), grpc.WithInsecure())
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return daemonapi.NewInWorkspaceServiceClient(conn), conn, nil
+	return &inWorkspaceServiceClient{
+		InWorkspaceServiceClient: daemonapi.NewInWorkspaceServiceClient(conn),
+		conn:                     conn,
+	}, nil
 }
 
 func init() {
