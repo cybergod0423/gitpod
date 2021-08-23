@@ -176,6 +176,7 @@ var ring1Cmd = &cobra.Command{
 		defer conn.Close()
 
 		defer func() {
+			log.Info("Running workspace Teardown")
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 

@@ -12,7 +12,6 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
@@ -20,9 +19,7 @@ import (
 	ociv1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/procfs"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/sys/unix"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -361,9 +358,6 @@ func (s *WorkspaceService) DisposeWorkspace(ctx context.Context, req *api.Dispos
 		return nil, status.Error(codes.Internal, "cannot delete workspace from store")
 	}
 
-	if err := unmountMark(sess.ServiceLocDaemon); err != nil {
-		log.WithError(err).WithField("workspaceId", req.Id).Error("cannot unmount mark mount")
-	}
 	// remove workspace daemon directory in the node
 	if err := os.RemoveAll(sess.ServiceLocDaemon); err != nil {
 		log.WithError(err).WithField("workspaceId", req.Id).Error("cannot delete workspace daemon directory")
@@ -770,27 +764,4 @@ func workspaceLifecycleHooks(cfg Config, kubernetesNamespace string, workspaceEx
 		session.WorkspaceReady:        {setupWorkspace, startIWS},
 		session.WorkspaceDisposed:     {iws.StopServingWorkspace},
 	}
-}
-
-// if the mark mount still exists in /proc/mounts it means we failed to unmount it and
-// we cannot remove the content. As a side effect the pod will stay in Terminating state
-func unmountMark(path string) error {
-	mounts, err := procfs.GetMounts()
-	if err != nil {
-		return xerrors.Errorf("unexpected error reading /proc/mounts: %w", err)
-	}
-
-	for _, mount := range mounts {
-		if !strings.Contains(mount.MountPoint, path) {
-			continue
-		}
-
-		log.WithField("path", path).Debug("Unmounting pending mark")
-		err = unix.Unmount(mount.MountPoint, 0)
-		if err != nil && !os.IsNotExist(err) {
-			return err
-		}
-	}
-
-	return nil
 }
