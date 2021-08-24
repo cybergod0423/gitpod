@@ -67,18 +67,25 @@ var ring0Cmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		client, err := connectToInWorkspaceDaemonService(ctx)
-		if err != nil {
-			log.WithError(err).Error("cannot connect to daemon")
-			return
-		}
+		prep, err := func() (*daemonapi.PrepareForUserNSResponse, error) {
+			client, err := connectToInWorkspaceDaemonService(ctx)
+			if err != nil {
+				log.WithError(err).Error("cannot connect to daemon")
+				return nil, err
+			}
+			defer client.Close()
 
-		prep, err := client.PrepareForUserNS(ctx, &daemonapi.PrepareForUserNSRequest{})
+			prep, err := client.PrepareForUserNS(ctx, &daemonapi.PrepareForUserNSRequest{})
+			if err != nil {
+				log.WithError(err).Fatal("cannot prepare for user namespaces")
+				return nil, err
+			}
+			return prep, nil
+		}()
 		if err != nil {
-			log.WithError(err).Fatal("cannot prepare for user namespaces")
+			// err already logged
 			return
 		}
-		client.Close()
 
 		defer func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -192,28 +199,30 @@ var ring1Cmd = &cobra.Command{
 			{ContainerId: 1, HostId: 100000, Size: 65534},
 		}
 		if !ring1Opts.MappingEstablished {
-			client, err := connectToInWorkspaceDaemonService(ctx)
-			if err != nil {
-				log.WithError(err).Error("cannot connect to daemon")
-				return
-			}
-			defer client.Close()
+			func() {
+				client, err := connectToInWorkspaceDaemonService(ctx)
+				if err != nil {
+					log.WithError(err).Error("cannot connect to daemon")
+					return
+				}
+				defer client.Close()
 
-			_, err = client.WriteIDMapping(ctx, &daemonapi.WriteIDMappingRequest{Pid: int64(os.Getpid()), Gid: false, Mapping: mapping})
-			if err != nil {
-				log.WithError(err).Error("cannot establish UID mapping")
-				return
-			}
-			_, err = client.WriteIDMapping(ctx, &daemonapi.WriteIDMappingRequest{Pid: int64(os.Getpid()), Gid: true, Mapping: mapping})
-			if err != nil {
-				log.WithError(err).Error("cannot establish GID mapping")
-				return
-			}
-			err = syscall.Exec("/proc/self/exe", append(os.Args, "--mapping-established"), os.Environ())
-			if err != nil {
-				log.WithError(err).Error("cannot exec /proc/self/exe")
-				return
-			}
+				_, err = client.WriteIDMapping(ctx, &daemonapi.WriteIDMappingRequest{Pid: int64(os.Getpid()), Gid: false, Mapping: mapping})
+				if err != nil {
+					log.WithError(err).Error("cannot establish UID mapping")
+					return
+				}
+				_, err = client.WriteIDMapping(ctx, &daemonapi.WriteIDMappingRequest{Pid: int64(os.Getpid()), Gid: true, Mapping: mapping})
+				if err != nil {
+					log.WithError(err).Error("cannot establish GID mapping")
+					return
+				}
+				err = syscall.Exec("/proc/self/exe", append(os.Args, "--mapping-established"), os.Environ())
+				if err != nil {
+					log.WithError(err).Error("cannot exec /proc/self/exe")
+					return
+				}
+			}()
 			return
 		}
 
@@ -357,20 +366,27 @@ var ring1Cmd = &cobra.Command{
 			return
 		}
 
-		client, err := connectToInWorkspaceDaemonService(ctx)
-		if err != nil {
-			log.WithError(err).Error("cannot connect to daemon")
-			return
-		}
+		client, err := func() (*inWorkspaceServiceClient, error) {
+			client, err := connectToInWorkspaceDaemonService(ctx)
+			if err != nil {
+				log.WithError(err).Error("cannot connect to daemon")
+				return nil, err
+			}
+			defer client.Close()
 
-		_, err = client.MountProc(ctx, &daemonapi.MountProcRequest{
-			Target: procLoc,
-			Pid:    int64(cmd.Process.Pid),
-		})
-		client.Close()
+			_, err = client.MountProc(ctx, &daemonapi.MountProcRequest{
+				Target: procLoc,
+				Pid:    int64(cmd.Process.Pid),
+			})
 
+			if err != nil {
+				log.WithError(err).Error("cannot mount proc")
+				return nil, err
+			}
+			return client, nil
+		}()
 		if err != nil {
-			log.WithError(err).Error("cannot mount proc")
+			// err already logged
 			return
 		}
 
@@ -784,6 +800,15 @@ type inWorkspaceServiceClient struct {
 }
 
 func (iwsc *inWorkspaceServiceClient) Close() error {
+	if iwsc.conn != nil {
+		err := iwsc.conn.Close()
+		if err != nil {
+			log.WithField("conn", "err").WithError(err).Info("error disconnecting from IWS")
+		} else {
+			log.WithField("conn", "closed").Info("successfully disconnect from IWS")
+		}
+	}
+	log.WithField("conn", "none").Info("successfully disconnect from IWS")
 	return nil
 }
 
@@ -810,6 +835,7 @@ func connectToInWorkspaceDaemonService(ctx context.Context) (*inWorkspaceService
 	if err != nil {
 		return nil, err
 	}
+	log.Info("successfully connect to IWS")
 
 	return &inWorkspaceServiceClient{
 		InWorkspaceServiceClient: daemonapi.NewInWorkspaceServiceClient(conn),
