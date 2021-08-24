@@ -105,6 +105,10 @@ func ServeWorkspace(uidmapper *Uidmapper, fsshift api.FSShiftMethod) func(ctx co
 
 // StopServingWorkspace stops a previously started workspace server
 func StopServingWorkspace(ctx context.Context, ws *session.Workspace) (err error) {
+	log := log.WithFields(ws.OWI())
+	log.Info("StopServingWorkspace called")
+	defer func() { log.Info("StopServingWorkspace exited") }()
+
 	//nolint:ineffassign
 	span, ctx := opentracing.StartSpanFromContext(ctx, "iws.StopServingWorkspace")
 	defer tracing.FinishSpan(span, &err)
@@ -193,25 +197,29 @@ func (wbs *InWorkspaceServiceServer) Stop() {
 
 // PrepareForUserNS mounts the workspace's shiftfs mark
 func (wbs *InWorkspaceServiceServer) PrepareForUserNS(ctx context.Context, req *api.PrepareForUserNSRequest) (*api.PrepareForUserNSResponse, error) {
+	log := log.WithFields(wbs.Session.OWI())
+	log.Info("PrepareForUserNS called")
+	defer func() { log.Info("PrepareForUserNS exited") }()
+
 	rt := wbs.Uidmapper.Runtime
 	if rt == nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "not connected to container runtime")
 	}
 	wscontainerID, err := rt.WaitForContainer(ctx, wbs.Session.InstanceID)
 	if err != nil {
-		log.WithError(err).WithFields(wbs.Session.OWI()).Error("PrepareForUserNS: cannot find workspace container")
+		log.WithError(err).Error("PrepareForUserNS: cannot find workspace container")
 		return nil, status.Errorf(codes.Internal, "cannot find workspace container")
 	}
 
 	rootfs, err := rt.ContainerRootfs(ctx, wscontainerID, container.OptsContainerRootfs{Unmapped: true})
 	if err != nil {
-		log.WithError(err).WithFields(wbs.Session.OWI()).Error("PrepareForUserNS: cannot find workspace rootfs")
+		log.WithError(err).Error("PrepareForUserNS: cannot find workspace rootfs")
 		return nil, status.Errorf(codes.Internal, "cannot find workspace rootfs")
 	}
 
 	containerPID, err := rt.ContainerPID(ctx, wscontainerID)
 	if err != nil {
-		log.WithError(err).WithFields(wbs.Session.OWI()).Error("PrepareForUserNS: cannot find workspace container PID")
+		log.WithError(err).Error("PrepareForUserNS: cannot find workspace container PID")
 		return nil, status.Errorf(codes.Internal, "cannot find workspace rootfs")
 	}
 
@@ -226,14 +234,14 @@ func (wbs *InWorkspaceServiceServer) PrepareForUserNS(ctx context.Context, req *
 		c.Args = append(c.Args, "mknod-fuse", "--uid", strconv.Itoa(wsinit.GitpodUID), "--gid", strconv.Itoa(wsinit.GitpodGID))
 	})
 	if err != nil {
-		log.WithError(err).WithFields(wbs.Session.OWI()).Error("PrepareForUserNS: cannot mknod fuse")
+		log.WithError(err).Error("PrepareForUserNS: cannot mknod fuse")
 		return nil, status.Errorf(codes.Internal, "cannot prepare FUSE")
 	}
 	err = nsinsider(wbs.Session.InstanceID, int(containerPID), func(c *exec.Cmd) {
 		c.Args = append(c.Args, "mknod-devnettun")
 	})
 	if err != nil {
-		log.WithError(err).WithFields(wbs.Session.OWI()).Error("PrepareForUserNS: cannot create /dev/net/tun")
+		log.WithError(err).Error("PrepareForUserNS: cannot create /dev/net/tun")
 		return nil, status.Errorf(codes.Internal, "cannot create /dev/net/tun")
 	}
 
@@ -261,7 +269,7 @@ func (wbs *InWorkspaceServiceServer) PrepareForUserNS(ctx context.Context, req *
 			return nil, status.Errorf(codes.Internal, "cannot mount fusefs mark")
 		}
 
-		log.WithFields(wbs.Session.OWI()).WithField("configuredShift", wbs.FSShift).WithField("fwb", wbs.Session.FullWorkspaceBackup).Info("fs-shift using fuse")
+		log.WithField("configuredShift", wbs.FSShift).WithField("fwb", wbs.Session.FullWorkspaceBackup).Info("fs-shift using fuse")
 		return &api.PrepareForUserNSResponse{
 			FsShift:             api.FSShiftMethod_FUSE,
 			FullWorkspaceBackup: wbs.Session.FullWorkspaceBackup,
@@ -295,6 +303,10 @@ func (wbs *InWorkspaceServiceServer) PrepareForUserNS(ctx context.Context, req *
 
 // MountProc mounts a proc filesystem
 func (wbs *InWorkspaceServiceServer) MountProc(ctx context.Context, req *api.MountProcRequest) (resp *api.MountProcResponse, err error) {
+	log := log.WithFields(wbs.Session.OWI())
+	log.Info("MountProc called")
+	defer func() { log.Info("MountProc exited") }()
+
 	var (
 		reqPID  = req.Pid
 		procPID uint64
@@ -363,6 +375,10 @@ func (wbs *InWorkspaceServiceServer) MountProc(ctx context.Context, req *api.Mou
 
 // MountProc mounts a proc filesystem
 func (wbs *InWorkspaceServiceServer) UmountProc(ctx context.Context, req *api.UmountProcRequest) (resp *api.UmountProcResponse, err error) {
+	log := log.WithFields(wbs.Session.OWI())
+	log.Info("UmountProc called")
+	defer func() { log.Info("UmountProc exited") }()
+
 	var (
 		reqPID  = req.Pid
 		procPID uint64
@@ -514,6 +530,10 @@ func (wbs *InWorkspaceServiceServer) UmountProc(ctx context.Context, req *api.Um
 }
 
 func (wbs *InWorkspaceServiceServer) MountSysfs(ctx context.Context, req *api.MountProcRequest) (resp *api.MountProcResponse, err error) {
+	log := log.WithFields(wbs.Session.OWI())
+	log.Info("MountSysfs called")
+	defer func() { log.Info("MountSysfs exited") }()
+
 	var (
 		reqPID  = req.Pid
 		procPID uint64
@@ -711,9 +731,13 @@ func readonlyPath(path string) error {
 
 // WriteIDMapping writes /proc/.../uid_map and /proc/.../gid_map for a workapce container
 func (wbs *InWorkspaceServiceServer) WriteIDMapping(ctx context.Context, req *api.WriteIDMappingRequest) (*api.WriteIDMappingResponse, error) {
+	log := log.WithFields(wbs.Session.OWI())
+	log.Info("WriteIDMapping called")
+	defer func() { log.Info("WriteIDMapping exited") }()
+
 	cid, err := wbs.Uidmapper.Runtime.WaitForContainer(ctx, wbs.Session.InstanceID)
 	if err != nil {
-		log.WithFields(wbs.Session.OWI()).WithError(err).Error("cannot write ID mapping, because we cannot find the container")
+		log.WithError(err).Error("cannot write ID mapping, because we cannot find the container")
 		return nil, status.Error(codes.FailedPrecondition, "cannot find container")
 	}
 
@@ -727,7 +751,9 @@ func (wbs *InWorkspaceServiceServer) WriteIDMapping(ctx context.Context, req *ap
 
 // Teardown triggers the final liev backup and possibly shiftfs mark unmount
 func (wbs *InWorkspaceServiceServer) Teardown(ctx context.Context, req *api.TeardownRequest) (*api.TeardownResponse, error) {
-	owi := wbs.Session.OWI()
+	log := log.WithFields(wbs.Session.OWI())
+	log.Info("Teardown called")
+	defer func() { log.Info("Teardown exited") }()
 
 	var (
 		success = true
@@ -736,7 +762,7 @@ func (wbs *InWorkspaceServiceServer) Teardown(ctx context.Context, req *api.Tear
 
 	err = wbs.unPrepareForUserNS()
 	if err != nil {
-		log.WithError(err).WithFields(owi).Error("mark FS unmount failed")
+		log.WithError(err).Error("mark FS unmount failed")
 		success = false
 	}
 
@@ -744,6 +770,10 @@ func (wbs *InWorkspaceServiceServer) Teardown(ctx context.Context, req *api.Tear
 }
 
 func (wbs *InWorkspaceServiceServer) unPrepareForUserNS() error {
+	log := log.WithFields(wbs.Session.OWI())
+	log.Info("unPrepareForUserNS called")
+	defer func() { log.Info("unPrepareForUserNS exited") }()
+
 	mountpoint := filepath.Join(wbs.Session.ServiceLocNode, "mark")
 	err := nsinsider(wbs.Session.InstanceID, 1, func(c *exec.Cmd) {
 		c.Args = append(c.Args, "unmount", "--target", mountpoint)
