@@ -688,6 +688,7 @@ export class WorkspaceStarter {
             "function:storeLayout",
             "function:stopWorkspace",
             "function:getToken",
+            "function:getScopes",
             "function:getContentBlobUploadUrl",
             "function:getContentBlobDownloadUrl",
             "function:accessCodeSyncStorage",

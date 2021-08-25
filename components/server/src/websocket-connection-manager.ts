@@ -12,6 +12,7 @@ import { log } from "@gitpod/gitpod-protocol/lib/util/logging";
 import { EventEmitter } from "events";
 import * as express from "express";
 import { ErrorCodes as RPCErrorCodes, MessageConnection, ResponseError } from "vscode-jsonrpc";
+import { isWithBearerToken } from "./auth/bearer-authenticator";
 import { AllAccessFunctionGuard, FunctionAccessGuard, WithFunctionAccessGuard } from "./auth/function-access";
 import { HostContextProvider } from "./auth/host-context-provider";
 import { RateLimiter, RateLimiterConfig, UserRateLimiter } from "./auth/rate-limiter";
@@ -77,7 +78,9 @@ export class WebsocketConnectionManager<C extends GitpodClient, S extends Gitpod
             resourceGuard = { canAccess: async () => false };
         }
 
-        gitpodServer.initialize(client, clientRegion, user, resourceGuard);
+        const bearerToken = isWithBearerToken(expressReq) ? expressReq.bearerToken : undefined;
+
+        gitpodServer.initialize(client, clientRegion, user, resourceGuard, bearerToken);
         client.onDidCloseConnection(() => {
             increaseApiConnectionClosedCounter();
             gitpodServer.dispose();

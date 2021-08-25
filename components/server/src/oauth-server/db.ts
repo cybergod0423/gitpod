@@ -19,6 +19,7 @@ export interface InMemory {
 
 // Scopes
 const scopes: OAuthScope[] = [
+  { name: "function:getScopes" },
   { name: "function:getWorkspace" },
   { name: "function:getWorkspaces" },
   { name: "function:listenForWorkspaceInstanceUpdates" },

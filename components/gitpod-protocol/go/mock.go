@@ -405,6 +405,15 @@ func (mr *MockAPIInterfaceMockRecorder) GetSnapshots(ctx, workspaceID interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSnapshots", reflect.TypeOf((*MockAPIInterface)(nil).GetSnapshots), ctx, workspaceID)
 }
 
+// GetScopes mocks base method.
+func (m *MockAPIInterface) GetScopes(ctx context.Context) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetScopes", ctx)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
 // GetToken mocks base method.
 func (m *MockAPIInterface) GetToken(ctx context.Context, query *GetTokenSearchOptions) (*Token, error) {
 	m.ctrl.T.Helper()

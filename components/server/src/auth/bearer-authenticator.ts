@@ -5,13 +5,11 @@
  */
 
 import { UserDB } from '@gitpod/gitpod-db/lib';
-import { GitpodTokenType } from '@gitpod/gitpod-protocol';
+import { GitpodTokenType, GitpodToken } from '@gitpod/gitpod-protocol';
 import * as crypto from 'crypto';
 import * as express from 'express';
 import { IncomingHttpHeaders } from 'http';
 import { inject, injectable } from 'inversify';
-import * as websocket from 'ws';
-import { WsNextFunction, WsRequestHandler } from '../express/ws-handler';
 import { AllAccessFunctionGuard, ExplicitFunctionAccessGuard, WithFunctionAccessGuard } from './function-access';
 import { TokenResourceGuard, WithResourceAccessGuard } from './resource-access';
 
@@ -33,11 +31,18 @@ const bearerAuthCode = 'BearerAuth';
 interface BearerAuthError extends Error {
     code: typeof bearerAuthCode
 }
-function isBearerAuthError(error: Error): error is BearerAuthError {
+export function isBearerAuthError(error: Error): error is BearerAuthError {
     return 'code' in error && error['code'] === bearerAuthCode;
 }
 function createBearerAuthError(message: string): BearerAuthError {
     return Object.assign(new Error(message), { code: bearerAuthCode } as { code: typeof bearerAuthCode });
+}
+
+export interface WithBearerToken {
+    bearerToken: GitpodToken
+}
+export function isWithBearerToken(context: any): context is WithBearerToken {
+    return !!context && typeof context === 'object' && 'bearerToken' in context && context['bearerToken']
 }
 
 @injectable()
@@ -47,7 +52,7 @@ export class BearerAuth {
     get restHandler(): express.RequestHandler {
         return async (req, res, next) => {
             try {
-                await this.doAuth(req);
+                await this.auth(req);
             } catch (e) {
                 if (isBearerAuthError(e)) {
                     res.status(401).send(e.message);
@@ -62,7 +67,7 @@ export class BearerAuth {
     get restHandlerOptionally(): express.RequestHandler {
         return async (req, res, next) => {
             try {
-                await this.doAuth(req);
+                await this.auth(req);
             } catch (e) {
                 // don't error the request, we just have not bearer authentication token
             }
@@ -70,14 +75,7 @@ export class BearerAuth {
         }
     }
 
-    public get websocketHandler(): WsRequestHandler {
-        return async (ws: websocket, req: express.Request, next: WsNextFunction): Promise<void> => {
-            await this.doAuth(req);
-            return next();
-        }
-    }
-
-    private async doAuth(req: express.Request): Promise<void> {
+    async auth(req: express.Request): Promise<void> {
         const token = getBearerToken(req.headers)
         if (!token) {
             throw createBearerAuthError('missing Bearer token');
@@ -90,6 +88,8 @@ export class BearerAuth {
         // hack: load the user again to get ahold of all identities
         // TODO(cw): instead of re-loading the user, we should properly join the identities in findUserByGitpodToken
         const user = (await this.userDB.findUserById(userAndToken.user.id))!;
+
+        (req as any as WithBearerToken).bearerToken = userAndToken.token;
 
         const resourceGuard = new TokenResourceGuard(userAndToken.user.id, userAndToken.token.scopes);
         (req as WithResourceAccessGuard).resourceGuard = resourceGuard;

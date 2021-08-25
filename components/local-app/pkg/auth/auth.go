@@ -24,6 +24,15 @@ const (
 	keyringService = "gitpod-io"
 )
 
+var Scopes = []string{
+	"function:getScopes",
+	"function:getWorkspace",
+	"function:getWorkspaces",
+	"function:listenForWorkspaceInstanceUpdates",
+	"resource:workspace::*::get",
+	"resource:workspaceInstance::*::get",
+}
+
 // SetToken returns the persisted Gitpod token
 func SetToken(host, token string) error {
 	return keyring.Set(keyringService, host, token)
@@ -31,7 +40,16 @@ func SetToken(host, token string) error {
 
 // GetToken returns the persisted Gitpod token
 func GetToken(host string) (token string, err error) {
-	return keyring.Get(keyringService, host)
+	tkn, err := keyring.Get(keyringService, host)
+	if errors.Is(err, keyring.ErrNotFound) {
+		return "", nil
+	}
+	return tkn, err
+}
+
+// DeleteToken deletes the persisted Gitpod token
+func DeleteToken(host string) error {
+	return keyring.Delete(keyringService, host)
 }
 
 // LoginOpts configure the login process
@@ -122,13 +140,7 @@ func Login(ctx context.Context, opts LoginOpts) (token string, err error) {
 	conf := &oauth2.Config{
 		ClientID:     "gplctl-1.0",
 		ClientSecret: "gplctl-1.0-secret", // Required (even though it is marked as optional?!)
-		Scopes: []string{
-			"function:getWorkspace",
-			"function:getWorkspaces",
-			"function:listenForWorkspaceInstanceUpdates",
-			"resource:workspace::*::get",
-			"resource:workspaceInstance::*::get",
-		},
+		Scopes:       Scopes,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  authURL.String(),
 			TokenURL: tokenURL.String(),

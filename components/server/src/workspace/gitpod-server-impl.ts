@@ -105,12 +105,13 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
     protected readonly disposables = new DisposableCollection();
     protected headlessLogRegistry = new Map<string, boolean>();
     protected resourceAccessGuard: ResourceAccessGuard;
+    protected bearerToken: GitpodToken | undefined;
 
     dispose(): void {
         this.disposables.dispose();
     }
 
-    initialize(client: Client | undefined, clientRegion: string | undefined, user: User, accessGuard: ResourceAccessGuard): void {
+    initialize(client: Client | undefined, clientRegion: string | undefined, user: User, accessGuard: ResourceAccessGuard, bearerToken: GitpodToken | undefined): void {
         if (client) {
             this.disposables.push(Disposable.create(() => this.client = undefined));
         }
@@ -118,6 +119,7 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
         this.user = user;
         this.clientRegion = clientRegion;
         this.resourceAccessGuard = accessGuard;
+        this.bearerToken = bearerToken;
         this.listenForWorkspaceInstanceUpdates();
     }
 
@@ -353,6 +355,10 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
             garbageCollectionStartDate: this.env.garbageCollectionStartDate,
             daysBeforeGarbageCollection: this.env.daysBeforeGarbageCollection
         }
+    }
+
+    public getScopes(): Promise<string[]> {
+        return Promise.resolve(this.bearerToken?.scopes || []);
     }
 
     public async getToken(query: GitpodServer.GetTokenSearchOptions): Promise<Token | undefined> {
@@ -1175,14 +1181,14 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
         const user = this.checkAndBlockUser('getHeadlessLog', { instanceId });
         const span = opentracing.globalTracer().startSpan("getHeadlessLog");
 
-        const ws = await this.workspaceDb.trace({span}).findByInstanceId(instanceId);
+        const ws = await this.workspaceDb.trace({ span }).findByInstanceId(instanceId);
         if (!ws) {
             throw new ResponseError(ErrorCodes.NOT_FOUND, `Workspace ${instanceId} not found`);
         }
 
         await this.guardAccess({ kind: 'workspaceLog', subject: ws }, 'get');
 
-        const wsi = await this.workspaceDb.trace({span}).findInstanceById(instanceId);
+        const wsi = await this.workspaceDb.trace({ span }).findInstanceById(instanceId);
         if (!wsi) {
             throw new ResponseError(ErrorCodes.NOT_FOUND, `Workspace instance for ${instanceId} not found`);
         }

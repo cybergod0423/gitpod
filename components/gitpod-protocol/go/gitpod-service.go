@@ -33,6 +33,7 @@ type APIInterface interface {
 	DeleteOwnAuthProvider(ctx context.Context, params *DeleteOwnAuthProviderParams) (err error)
 	GetBranding(ctx context.Context) (res *Branding, err error)
 	GetConfiguration(ctx context.Context) (res *Configuration, err error)
+	GetScopes(ctx context.Context) (res []string, err error)
 	GetToken(ctx context.Context, query *GetTokenSearchOptions) (res *Token, err error)
 	GetPortAuthenticationToken(ctx context.Context, workspaceID string) (res *Token, err error)
 	DeleteAccount(ctx context.Context) (err error)
@@ -106,6 +107,8 @@ const (
 	FunctionGetBranding FunctionName = "getBranding"
 	// FunctionGetConfiguration is the name of the getConfiguration function
 	FunctionGetConfiguration FunctionName = "getConfiguration"
+	// FunctionGetScopes is the name of the getScopes function
+	FunctionGetScopes FunctionName = "getScopes"
 	// FunctionGetToken is the name of the getToken function
 	FunctionGetToken FunctionName = "getToken"
 	// FunctionGetPortAuthenticationToken is the name of the getPortAuthenticationToken function
@@ -495,6 +498,24 @@ func (gp *APIoverJSONRPC) GetConfiguration(ctx context.Context) (res *Configurat
 		return
 	}
 	res = &result
+
+	return
+}
+
+// GetScopes calls getScopes on the server
+func (gp *APIoverJSONRPC) GetScopes(ctx context.Context) (res []string, err error) {
+	if gp == nil {
+		err = errNotConnected
+		return
+	}
+	var _params []interface{}
+
+	var result []string
+	err = gp.C.Call(ctx, "getScopes", _params, &result)
+	if err != nil {
+		return
+	}
+	res = result
 
 	return
 }
