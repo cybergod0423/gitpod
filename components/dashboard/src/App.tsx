@@ -16,8 +16,8 @@ import { getGitpodService } from './service/service';
 import { shouldSeeWhatsNew, WhatsNew } from './whatsnew/WhatsNew';
 import gitpodIcon from './icons/gitpod.svg';
 import { ErrorCodes } from '@gitpod/gitpod-protocol/lib/messaging/error';
-import { useHistory } from "react-router-dom";
-import { page } from './Analytics'
+import { BrowserRouter, useHistory } from "react-router-dom";
+import { page, trackPathChange } from './Analytics';
 
 const Setup = React.lazy(() => import(/* webpackPrefetch: true */ './Setup'));
 const Workspaces = React.lazy(() => import(/* webpackPrefetch: true */ './workspaces/Workspaces'));
@@ -82,6 +82,7 @@ function App() {
                     }
                 }
             }
+            page();
             setLoading(false);
         })();
     }, []);
@@ -111,10 +112,10 @@ function App() {
         }
     }, []);
 
-    // listen and notify Segment of client-side page updates
+    // listen and notify Segment of client-side path updates
     useEffect(() => {
         return history.listen((location: any) => {
-            page();
+            trackPathChange(window.location.pathname);
         })
     }, [history])
 
@@ -268,9 +269,11 @@ function App() {
     }
 
     return (
-        <Suspense fallback={<Loading />}>
-            {toRender}
-        </Suspense>
+        <BrowserRouter>
+            <Suspense fallback={<Loading />}>
+                {toRender}
+            </Suspense>
+        </BrowserRouter>
     );
 }
 

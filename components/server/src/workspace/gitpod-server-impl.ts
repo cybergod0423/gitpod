@@ -18,7 +18,7 @@ import { TeamSubscription, TeamSubscriptionSlot, TeamSubscriptionSlotResolved } 
 import { Cancelable } from '@gitpod/gitpod-protocol/lib/util/cancelable';
 import { log, LogContext } from '@gitpod/gitpod-protocol/lib/util/logging';
 import { TraceContext } from '@gitpod/gitpod-protocol/lib/util/tracing';
-import { RemoteTrackMessage, TrackMessage } from '@gitpod/gitpod-protocol/lib/analytics';
+import { PageMessage, RemotePageMessage, RemoteTrackMessage, TrackMessage } from '@gitpod/gitpod-protocol/lib/analytics';
 import { ImageBuilderClientProvider, LogsRequest } from '@gitpod/image-builder/lib';
 import { WorkspaceManagerClientProvider } from '@gitpod/ws-manager/lib/client-provider';
 import { ControlPortRequest, DescribeWorkspaceRequest, MarkActiveRequest, PortSpec, PortVisibility as ProtoPortVisibility, StopWorkspacePolicy, StopWorkspaceRequest } from '@gitpod/ws-manager/lib/core_pb';
@@ -1924,6 +1924,21 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
             properties: event.properties,
         }
         this.analytics.track(msg);
+    }
+
+    public async page(event: RemotePageMessage): Promise<void> {
+        // Beware: DO NOT just event... the message, but consume it individually as the message is coming from
+        //         the wire and we have no idea what's in it. Even passing the context and properties directly
+        //         is questionable. Considering we're handing down the msg and do not know how the analytics library
+        //         handles potentially broken or malicious input, we better err on the side of caution.
+        const msg: PageMessage = {
+            userId: this.user?.id,
+            anonymousId: event.anonymousId,
+            messageId: event.messageId,
+            context: event.context,
+            properties: event.properties,
+        }
+        this.analytics.page(msg);
     }
 
     async getTerms(): Promise<Terms> {
