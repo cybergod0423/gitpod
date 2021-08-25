@@ -14,7 +14,7 @@ import { useContext, useEffect, useState } from "react";
 import { getGitpodService } from "../service/service";
 import { getCurrentTeam, TeamsContext } from "../teams/teams-context";
 import { ThemeContext } from "../theme-context";
-import { PrebuildInfo, Project } from "@gitpod/gitpod-protocol";
+import { PrebuildWithStatus, Project } from "@gitpod/gitpod-protocol";
 import { toRemoteURL } from "./render-utils";
 import ContextMenu from "../components/ContextMenu";
 
@@ -25,7 +25,7 @@ export default function () {
     const { teams } = useContext(TeamsContext);
     const team = getCurrentTeam(location, teams);
     const [ projects, setProjects ] = useState<Project[]>([]);
-    const [ lastPrebuilds, setLastPrebuilds ] = useState<Map<string, PrebuildInfo>>(new Map());
+    const [ lastPrebuilds, setLastPrebuilds ] = useState<Map<string, PrebuildWithStatus>>(new Map());
 
     const { isDark } = useContext(ThemeContext);
 
@@ -132,8 +132,8 @@ export default function () {
                                     <div className={"my-auto rounded-full w-3 h-3 text-sm align-middle " + (true ? "bg-green-500" : "bg-gray-400")}>
                                         &nbsp;
                                     </div>
-                                    <div className="my-auto">{lastPrebuilds.get(p.id)!.branch}</div>
-                                    <div className="my-auto text-gray-400">{moment(lastPrebuilds.get(p.id)!.startedAt, "YYYYMMDD").fromNow()}</div>
+                                    <div className="my-auto">{lastPrebuilds.get(p.id)?.info?.branch}</div>
+                                    <div className="my-auto text-gray-400">{moment(lastPrebuilds.get(p.id)?.info.startedAt, "YYYYMMDD").fromNow()}</div>
                                     <div className="my-auto text-gray-400 flex-grow text-right">View All ⟶</div>
                                 </div>)
                                 : (<div className="flex h-full text-md">
