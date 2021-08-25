@@ -71,8 +71,8 @@ export const page = async () => {
     // retrieve anonymousId from Cookie. If not set yet, generate 'ajs_anonymous_id' cookie
     let anonymousId;
     const ajsCookie = Cookies.get('ajs_anonymous_id')
-    if (ajsCookie) {
-        anonymousId = ajsCookie;
+    if (ajsCookie && typeof ajsCookie === 'string') {
+        anonymousId = ajsCookie.replace(/(^"|"$)/g, '');
     } else {
         anonymousId = uuidv4()
         Cookies.set('ajs_anonymous_id', anonymousId);

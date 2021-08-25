@@ -16,7 +16,7 @@ import { getGitpodService } from './service/service';
 import { shouldSeeWhatsNew, WhatsNew } from './whatsnew/WhatsNew';
 import gitpodIcon from './icons/gitpod.svg';
 import { ErrorCodes } from '@gitpod/gitpod-protocol/lib/messaging/error';
-import { BrowserRouter, useHistory } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 import { page, trackPathChange } from './Analytics';
 
 const Setup = React.lazy(() => import(/* webpackPrefetch: true */ './Setup'));
@@ -269,11 +269,9 @@ function App() {
     }
 
     return (
-        <BrowserRouter>
-            <Suspense fallback={<Loading />}>
-                {toRender}
-            </Suspense>
-        </BrowserRouter>
+        <Suspense fallback={<Loading />}>
+            {toRender}
+        </Suspense>
     );
 }
 
