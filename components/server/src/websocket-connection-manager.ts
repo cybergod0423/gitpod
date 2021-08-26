@@ -76,10 +76,10 @@ export class WebsocketConnectionManager<C extends GitpodClient, S extends Gitpod
             resourceGuard = { canAccess: async () => false };
         }
 
-        const dnt = expressReq.get('dnt')
+        const dnt = (expressReq as any)['dnt']
         const clientHeaderFields:ClientHeaderFields = {
             ip: expressReq.ip,
-            userAgent: expressReq.get('User-Agent'),
+            userAgent: (expressReq as any).headers['User-Agent'],
             dnt: dnt ? +dnt : undefined,
             clientRegion: (expressReq as any).headers["x-glb-client-region"]
         }
