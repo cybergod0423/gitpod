@@ -167,6 +167,13 @@ spec:
           value: "{{ template "gitpod.comp.imageFull" (dict "root" . "gp" $.Values "comp" .Values.components.workspace.defaultImage) }}"
         - name: IDE_IMAGE_ALIASES
           value: {{ (dict "code-latest" (include "gitpod.comp.imageFull" (dict "root" . "gp" $.Values "comp" .Values.components.workspace.codeImage)) "code" (include "stable-image-full" (dict "root" . "gp" $.Values "comp" .Values.components.workspace.codeImage))) | toJson | quote }}
+    {{- if .Values.vsxRegistry.proxy }}
+        - name: VSX_REGISTRY_URL
+          value: "https://open-vsx.{{ .Values.hostname }}"
+    {{- else if (and .Values.vsxRegistry.host (ne .Values.vsxRegistry.host "open-vsx.org")) }}
+        - name: VSX_REGISTRY_URL
+          value: "https://{{ .Values.vsxRegistry.host }}"
+    {{- end }}
     {{- if $comp.blockNewUsers }}
         - name: BLOCK_NEW_USERS
           value: {{ $comp.blockNewUsers | quote }}

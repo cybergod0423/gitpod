@@ -186,4 +186,6 @@ export class Env extends AbstractComponentEnv {
     readonly serverProxyApiKey = process.env.SERVER_PROXY_APIKEY;
 
     readonly codeSyncConfig = JSON.parse(process.env.CODE_SYNC_CONFIG || "{}");
+
+    readonly vsxRegistryUrl = getEnvVar("VSX_REGISTRY_URL", "https://open-vsx.org");
 }
