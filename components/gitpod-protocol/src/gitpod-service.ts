@@ -223,7 +223,7 @@ export interface GitpodServer extends JsonRpcServer<GitpodClient>, AdminServer, 
      * Analytics
      */
     trackEvent(event: RemoteTrackMessage): Promise<void>;
-    page(event: RemotePageMessage): Promise<void>;
+    trackLocation(event: RemotePageMessage): Promise<void>;
 }
 
 export interface CreateProjectParams {

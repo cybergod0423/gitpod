@@ -17,7 +17,7 @@ import { shouldSeeWhatsNew, WhatsNew } from './whatsnew/WhatsNew';
 import gitpodIcon from './icons/gitpod.svg';
 import { ErrorCodes } from '@gitpod/gitpod-protocol/lib/messaging/error';
 import { useHistory } from "react-router-dom";
-import { page, trackPathChange } from './Analytics';
+import { trackLocation, trackPathChange } from './Analytics';
 
 const Setup = React.lazy(() => import(/* webpackPrefetch: true */ './Setup'));
 const Workspaces = React.lazy(() => import(/* webpackPrefetch: true */ './workspaces/Workspaces'));
@@ -82,7 +82,7 @@ function App() {
                     }
                 }
             }
-            page();
+            trackLocation();
             setLoading(false);
         })();
     }, []);

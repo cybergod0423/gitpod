@@ -61,7 +61,7 @@ export const trackPathChange = (path: string) => {
 }
 
 //call this to record a page call
-export const page = async () => {
+export const trackLocation = async () => {
     // get public IPv4 address
     const publicIp = require('react-public-ip');
     const ip = await publicIp.v4();
@@ -70,7 +70,7 @@ export const page = async () => {
     const { getUserAgent } = require("universal-user-agent");
     const userAgent = getUserAgent();
 
-    getGitpodService().server.page({
+    getGitpodService().server.trackLocation({
         properties: {
             referrer: document.referrer,
             path: window.location.pathname,

@@ -1926,7 +1926,7 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
         this.analytics.track(msg);
     }
 
-    public async page(event: RemotePageMessage): Promise<void> {
+    public async trackLocation(event: RemotePageMessage): Promise<void> {
         if (!this.user) {
             // we require a userId on server side page calls to associate an actor with the visit
             return;
