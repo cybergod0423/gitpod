@@ -7,7 +7,7 @@
 import { BlobServiceClient } from "@gitpod/content-service/lib/blobs_grpc_pb";
 import { DownloadUrlRequest, DownloadUrlResponse, UploadUrlRequest, UploadUrlResponse } from '@gitpod/content-service/lib/blobs_pb';
 import { AppInstallationDB, UserDB, UserMessageViewsDB, WorkspaceDB, DBWithTracing, TracedWorkspaceDB, DBGitpodToken, DBUser, UserStorageResourcesDB, TeamDB } from '@gitpod/gitpod-db/lib';
-import { AuthProviderEntry, AuthProviderInfo, Branding, CommitContext, Configuration, CreateWorkspaceMode, DisposableCollection, GetWorkspaceTimeoutResult, GitpodClient, GitpodServer, GitpodToken, GitpodTokenType, InstallPluginsParams, PermissionName, PortVisibility, PrebuiltWorkspace, PrebuiltWorkspaceContext, PreparePluginUploadParams, ResolvedPlugins, ResolvePluginsParams, SetWorkspaceTimeoutResult, StartPrebuildContext, StartWorkspaceResult, Terms, Token, UninstallPluginParams, User, UserEnvVar, UserEnvVarValue, UserInfo, WhitelistedRepository, Workspace, WorkspaceContext, WorkspaceCreationResult, WorkspaceImageBuild, WorkspaceInfo, WorkspaceInstance, WorkspaceInstancePort, WorkspaceInstanceUser, WorkspaceTimeoutDuration, GuessGitTokenScopesParams, GuessedGitTokenScopes, Team, TeamMemberInfo, TeamMembershipInvite, CreateProjectParams, Project, ProviderRepository, PrebuildInfo, TeamMemberRole, WithDefaultConfig, FindPrebuildsParams } from '@gitpod/gitpod-protocol';
+import { AuthProviderEntry, AuthProviderInfo, Branding, CommitContext, Configuration, CreateWorkspaceMode, DisposableCollection, GetWorkspaceTimeoutResult, GitpodClient, GitpodServer, GitpodToken, GitpodTokenType, InstallPluginsParams, PermissionName, PortVisibility, PrebuiltWorkspace, PrebuiltWorkspaceContext, PreparePluginUploadParams, ResolvedPlugins, ResolvePluginsParams, SetWorkspaceTimeoutResult, StartPrebuildContext, StartWorkspaceResult, Terms, Token, UninstallPluginParams, User, UserEnvVar, UserEnvVarValue, UserInfo, WhitelistedRepository, Workspace, WorkspaceContext, WorkspaceCreationResult, WorkspaceImageBuild, WorkspaceInfo, WorkspaceInstance, WorkspaceInstancePort, WorkspaceInstanceUser, WorkspaceTimeoutDuration, GuessGitTokenScopesParams, GuessedGitTokenScopes, Team, TeamMemberInfo, TeamMembershipInvite, CreateProjectParams, clientHeaderFields, Project, ProviderRepository, PrebuildInfo, TeamMemberRole, WithDefaultConfig, FindPrebuildsParams } from '@gitpod/gitpod-protocol';
 import { AccountStatement } from "@gitpod/gitpod-protocol/lib/accounting-protocol";
 import { AdminBlockUserRequest, AdminGetListRequest, AdminGetListResult, AdminGetWorkspacesRequest, AdminModifyPermanentWorkspaceFeatureFlagRequest, AdminModifyRoleOrPermissionRequest, WorkspaceAndInstance } from '@gitpod/gitpod-protocol/lib/admin-protocol';
 import { GetLicenseInfoResult, LicenseFeature, LicenseValidationResult } from '@gitpod/gitpod-protocol/lib/license-protocol';
@@ -101,31 +101,31 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
     public readonly uuid: string = uuidv4();
     protected client: Client | undefined;
     protected user?: User;
-    protected clientRegion: string | undefined;
     protected readonly disposables = new DisposableCollection();
     protected headlessLogRegistry = new Map<string, boolean>();
     protected resourceAccessGuard: ResourceAccessGuard;
+    protected clientHeaderFields: clientHeaderFields | undefined;
 
     dispose(): void {
         this.disposables.dispose();
     }
 
-    initialize(client: Client | undefined, clientRegion: string | undefined, user: User, accessGuard: ResourceAccessGuard): void {
+    initialize(client: Client | undefined, user: User, accessGuard: ResourceAccessGuard, clientHeaderFields: clientHeaderFields | undefined): void {
         if (client) {
             this.disposables.push(Disposable.create(() => this.client = undefined));
         }
         this.client = client;
         this.user = user;
-        this.clientRegion = clientRegion;
         this.resourceAccessGuard = accessGuard;
         this.listenForWorkspaceInstanceUpdates();
+        this.clientHeaderFields = clientHeaderFields
     }
 
     protected listenForWorkspaceInstanceUpdates(): void {
         if (!this.user || !this.client) {
             return;
         }
-        log.debug({ userId: this.user.id }, `clientRegion: ${this.clientRegion}`);
+        log.debug({ userId: this.user.id }, `clientRegion: ${this.clientHeaderFields?.clientRegion}`);
         log.info({ userId: this.user.id }, 'initializeClient');
 
         const withTrace = (ctx: TraceContext, cb: () => void) => {
@@ -283,7 +283,7 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
 
     public async getClientRegion(): Promise<string | undefined> {
         this.checkUser("getClientRegion");
-        return this.clientRegion;
+        return this.clientHeaderFields?.clientRegion;
     }
 
     /**
@@ -1935,7 +1935,10 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
             userId: this.user?.id,
             anonymousId: event.anonymousId,
             messageId: event.messageId,
-            context: event.context,
+            context: {
+                ip: this.clientHeaderFields?.ip,
+                userAgent: this.clientHeaderFields?.userAgent
+            },
             properties: event.properties,
         }
         this.analytics.page(msg);

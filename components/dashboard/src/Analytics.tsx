@@ -68,19 +68,11 @@ export const trackLocation = async () => {
     let anonymousId;
     const ajsCookie = Cookies.get('ajs_anonymous_id')
     if (ajsCookie) {
-        anonymousId = ajsCookie;
+        anonymousId = ajsCookie.replace(/(^"|"$)/g, '');
     } else {
         anonymousId = v4()
         Cookies.set('ajs_anonymous_id', anonymousId);
     }
-
-    // get public IPv4 address
-    const publicIp = require('react-public-ip');
-    const ip = await publicIp.v4();
-
-    //get User Agent
-    const { getUserAgent } = require("universal-user-agent");
-    const userAgent = getUserAgent();
 
     getGitpodService().server.trackLocation({
         anonymousId: anonymousId,
@@ -89,10 +81,6 @@ export const trackLocation = async () => {
             path: window.location.pathname,
             host: window.location.hostname,
             url: window.location.href
-        },
-        context: {
-            userAgent: userAgent,
-            ip: ip
         }
     })
 }

@@ -257,6 +257,13 @@ export interface ProviderRepository {
     inUse?: boolean;
 }
 
+export interface ClientHeaderFields{
+    ip?:string;
+    userAgent?:string;
+    dnt?:number;
+    clientRegion?:string;
+}
+
 export const WorkspaceTimeoutValues = ["30m", "60m", "180m"] as const;
 
 export const createServiceMock = function <C extends GitpodClient, S extends GitpodServer>(methods: Partial<JsonRpcProxy<S>>): GitpodServiceImpl<C, S> {

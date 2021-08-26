@@ -4,7 +4,7 @@
  * See License-AGPL.txt in the project root for license information.
  */
 
-import { Disposable, GitpodClient, GitpodServer, GitpodServerPath, User } from "@gitpod/gitpod-protocol";
+import { clientHeaderFields, Disposable, GitpodClient, GitpodServer, GitpodServerPath, User } from "@gitpod/gitpod-protocol";
 import { ErrorCodes } from "@gitpod/gitpod-protocol/lib/messaging/error";
 import { ConnectionHandler } from "@gitpod/gitpod-protocol/lib/messaging/handler";
 import { JsonRpcConnectionHandler, JsonRpcProxy, JsonRpcProxyFactory } from "@gitpod/gitpod-protocol/lib/messaging/proxy-factory";
@@ -12,6 +12,7 @@ import { log } from "@gitpod/gitpod-protocol/lib/util/logging";
 import { EventEmitter } from "events";
 import * as express from "express";
 import { ErrorCodes as RPCErrorCodes, MessageConnection, ResponseError } from "vscode-jsonrpc";
+import { RequestType } from "vscode-ws-jsonrpc";
 import { AllAccessFunctionGuard, FunctionAccessGuard, WithFunctionAccessGuard } from "./auth/function-access";
 import { HostContextProvider } from "./auth/host-context-provider";
 import { RateLimiter, RateLimiterConfig, UserRateLimiter } from "./auth/rate-limiter";
@@ -60,7 +61,6 @@ export class WebsocketConnectionManager<C extends GitpodClient, S extends Gitpod
         const session = expressReq.session;
 
         const gitpodServer = this.serverFactory();
-        const clientRegion = (expressReq as any).headers["x-glb-client-region"];
         const user = expressReq.user as User;
 
         let resourceGuard: ResourceAccessGuard;
@@ -77,7 +77,15 @@ export class WebsocketConnectionManager<C extends GitpodClient, S extends Gitpod
             resourceGuard = { canAccess: async () => false };
         }
 
-        gitpodServer.initialize(client, clientRegion, user, resourceGuard);
+        const dnt = expressReq.get('dnt')
+        const clientHeaderFields:clientHeaderFields = {
+            ip: expressReq.ip,
+            userAgent: expressReq.get('User-Agent'),
+            dnt: dnt ? +dnt : undefined,
+            clientRegion: (expressReq as any).headers["x-glb-client-region"]
+        }
+
+        gitpodServer.initialize(client, user, resourceGuard, clientHeaderFields);
         client.onDidCloseConnection(() => {
             increaseApiConnectionClosedCounter();
             gitpodServer.dispose();
