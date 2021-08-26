@@ -4,7 +4,7 @@
  * See License-AGPL.txt in the project root for license information.
  */
 
-import { clientHeaderFields, Disposable, GitpodClient, GitpodServer, GitpodServerPath, User } from "@gitpod/gitpod-protocol";
+import { ClientHeaderFields, Disposable, GitpodClient, GitpodServer, GitpodServerPath, User } from "@gitpod/gitpod-protocol";
 import { ErrorCodes } from "@gitpod/gitpod-protocol/lib/messaging/error";
 import { ConnectionHandler } from "@gitpod/gitpod-protocol/lib/messaging/handler";
 import { JsonRpcConnectionHandler, JsonRpcProxy, JsonRpcProxyFactory } from "@gitpod/gitpod-protocol/lib/messaging/proxy-factory";
@@ -78,7 +78,7 @@ export class WebsocketConnectionManager<C extends GitpodClient, S extends Gitpod
         }
 
         const dnt = expressReq.get('dnt')
-        const clientHeaderFields:clientHeaderFields = {
+        const clientHeaderFields:ClientHeaderFields = {
             ip: expressReq.ip,
             userAgent: expressReq.get('User-Agent'),
             dnt: dnt ? +dnt : undefined,
