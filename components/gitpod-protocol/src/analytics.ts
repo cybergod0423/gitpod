@@ -29,7 +29,6 @@ export type TrackMessage = Message & Identity & {
 };
 
 export type PageMessage = Message & Identity & {
-    anonymousId: string | number;
     properties?: any;
     timestamp?: Date;
     context?: any;

@@ -1927,13 +1927,16 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
     }
 
     public async page(event: RemotePageMessage): Promise<void> {
+        if (!this.user) {
+            // we require a userId on server side page calls to associate an actor with the visit
+            return;
+        }
         // Beware: DO NOT just event... the message, but consume it individually as the message is coming from
         //         the wire and we have no idea what's in it. Even passing the context and properties directly
         //         is questionable. Considering we're handing down the msg and do not know how the analytics library
         //         handles potentially broken or malicious input, we better err on the side of caution.
         const msg: PageMessage = {
-            userId: this.user?.id,
-            anonymousId: event.anonymousId,
+            userId: this.user.id,
             messageId: event.messageId,
             context: event.context,
             properties: event.properties,

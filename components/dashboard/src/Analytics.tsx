@@ -5,12 +5,6 @@
  */
 
 import { getGitpodService } from "./service/service";
-import Cookies from "js-cookie";
-import { v4 as uuidv4 } from 'uuid';
-
-declare global {
-    interface Window { analytics: any; }
-}
 
 //contexts from which calls are made in dashboard
 export type dashboard_contexts = "menu" | "/<team_name>/<project_name>/configure" | "/new" | "/<team_name>/<project_name>/prebuilds" | "/<team_name>/<project_name>" | "/projects" | "/<team_name>/members" | "/teams/new" | "/workspaces" | "/<team_name>/projects";
@@ -68,16 +62,6 @@ export const trackPathChange = (path: string) => {
 
 //call this to record a page call
 export const page = async () => {
-    // retrieve anonymousId from Cookie. If not set yet, generate 'ajs_anonymous_id' cookie
-    let anonymousId;
-    const ajsCookie = Cookies.get('ajs_anonymous_id')
-    if (ajsCookie && typeof ajsCookie === 'string') {
-        anonymousId = ajsCookie.replace(/(^"|"$)/g, '');
-    } else {
-        anonymousId = uuidv4()
-        Cookies.set('ajs_anonymous_id', anonymousId);
-    }
-
     // get public IPv4 address
     const publicIp = require('react-public-ip');
     const ip = await publicIp.v4();
@@ -87,7 +71,6 @@ export const page = async () => {
     const userAgent = getUserAgent();
 
     getGitpodService().server.page({
-        anonymousId: anonymousId,
         properties: {
             referrer: document.referrer,
             path: window.location.pathname,
