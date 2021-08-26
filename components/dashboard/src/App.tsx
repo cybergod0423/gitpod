@@ -82,10 +82,13 @@ function App() {
                     }
                 }
             }
-            trackLocation();
             setLoading(false);
         })();
     }, []);
+
+    useEffect(() => {
+        trackLocation();
+    }, [user])
 
     useEffect(() => {
         const updateTheme = () => {
