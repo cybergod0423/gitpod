@@ -119,7 +119,7 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
         this.resourceAccessGuard = accessGuard;
         this.listenForWorkspaceInstanceUpdates();
         this.clientHeaderFields = clientHeaderFields;
-        log.info(""+{clientHeaderFields:clientHeaderFields});
+        log.debug(""+JSON.stringify({clientHeaderFields:clientHeaderFields}));
     }
 
     protected listenForWorkspaceInstanceUpdates(): void {
