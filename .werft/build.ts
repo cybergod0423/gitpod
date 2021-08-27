@@ -397,8 +397,8 @@ export async function deployToDev(deploymentConfig: DeploymentConfig, workspaceF
         flags += ` --set components.wsDaemon.servicePort=${wsdaemonPortMeta}`;
         flags += ` --set components.registryFacade.ports.registry.servicePort=${registryNodePortMeta}`;
 
-        let workspacePool = "workspace-pool"
-        flags += ` --set components.workspace.affinity.default="cloud.google.com/gke-nodepool=${workspacePool}"`;
+        let workspaceAffinity = "gitpod.io/workspace_0"
+        flags += ` --set components.workspace.affinity.default="${workspaceAffinity}"`;
 
         if (k3sWsCluster) {
             // we do not need meta cluster ws components when k3s ws is enabled
