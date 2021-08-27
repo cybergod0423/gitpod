@@ -35,7 +35,8 @@ export USER=gitpod
 cd /ide || exit
 
 # Replace OpenVSX URL
-sed -i "s|https://open-vsx.org|$VSX_REGISTRY_URL|g" ./product.json
+echo "Replacing VSX registry URL ..." > /home/gitpod/replace-vsx-url.log
+sudo sed -i "s|https://open-vsx.org|$VSX_REGISTRY_URL|g" ./product.json 2>&1 | tee -a /home/gitpod/replace-vsx-url.log
 
 if [ "$SUPERVISOR_DEBUG_ENABLE" = "true" ]; then
     exec /ide/node/bin/gitpod-node --inspect ./out/gitpod.js "$@" --verbose --log=trace
