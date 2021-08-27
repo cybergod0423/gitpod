@@ -6,13 +6,6 @@ affinity:
         - key: gitpod.io/workload_meta
           operator: Exists
 
-components:
-
-  workspace:
-    affinity:
-      default: "gitpod.io/workspace_only"
-
-
 # Sub-Charts
 
 rabbitmq:
