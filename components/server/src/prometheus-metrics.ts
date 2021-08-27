@@ -101,3 +101,15 @@ export function increaseMessagebusTopicReads(topic: string) {
         topic,
     })
 }
+
+const workspaceStartHistogram = new prometheusClient.Histogram({
+    name: 'gitpod_server_workspace_start_duration_seconds',
+    help: 'Duration of workspace start requests',
+    labelNames: ['status'],
+    buckets: prometheusClient.exponentialBuckets(2, 2, 10),
+    registers: [prometheusClient.register]
+});
+
+export function observeWorkspaceStartDuration(status: string, duration: number) {
+    workspaceStartHistogram.observe({status}, duration);
+}
