@@ -15,7 +15,7 @@ RUN mkdir -p /theia/node/bin \
     cp -ar /usr/local/include/node/         /theia/node/include/ && \
     cp -ar /usr/local/lib/node_modules/npm/ /theia/node/lib/node_modules/
 
-FROM alpine:3.13 AS builder_alpine
+FROM alpine:3.14 AS builder_alpine
 
 RUN apk add --no-cache bash gcc g++ make pkgconfig python3 libc6-compat libexecinfo-dev git patchelf findutils curl jq
 
