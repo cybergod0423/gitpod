@@ -392,6 +392,7 @@ export async function deployToDev(deploymentConfig: DeploymentConfig, workspaceF
         }
     }
 
+
     function installGitpod(commonFlags: string) {
         let flags = commonFlags
         flags += ` --set components.wsDaemon.servicePort=${wsdaemonPortMeta}`;
