@@ -407,7 +407,7 @@ export async function deployToDev(deploymentConfig: DeploymentConfig, workspaceF
         }
 
         exec(`helm dependencies up`);
-        exec(`/usr/local/bin/helm3 upgrade --install --timeout 10m -f ../.werft/values.dev.yaml ${flags} ${helmInstallName} .`);
+        exec(`/usr/local/bin/helm3 upgrade --install --timeout 10m -f ../.werft/values.nodeAffinities.yaml -f ../.werft/values.dev.yaml ${flags} ${helmInstallName} .`);
         exec(`kubectl apply -f ../.werft/jaeger.yaml`);
 
         werft.log('helm', 'installing Sweeper');
