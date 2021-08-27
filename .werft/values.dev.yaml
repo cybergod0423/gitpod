@@ -79,7 +79,7 @@ components:
     pullSecret:
       secretName: gcp-sa-registry-auth
     affinity:
-      default: "gitpod.io/workload_workspace"
+      default: "workspace_only"
     templates:
       default:
         spec:
@@ -182,15 +182,6 @@ components:
       - /run/containerd/io.containerd.runtime.v2.task/k8s.io
 
   wsScheduler:
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-              - key: gitpod.io/workload_workspace
-                operator: In
-                values:
-                  - true
     scaler:
       enabled: true
       controller:
