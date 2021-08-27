@@ -392,14 +392,12 @@ export async function deployToDev(deploymentConfig: DeploymentConfig, workspaceF
         }
     }
 
-
     function installGitpod(commonFlags: string) {
         let flags = commonFlags
         flags += ` --set components.wsDaemon.servicePort=${wsdaemonPortMeta}`;
         flags += ` --set components.registryFacade.ports.registry.servicePort=${registryNodePortMeta}`;
 
-        let workspaceAffinity = "gitpod.io/workspace_0"
-        flags += ` --set components.workspace.affinity.default="${workspaceAffinity}"`;
+        let nodeAffinityValues = "values.nodeAffinities_0.yaml"
 
         if (k3sWsCluster) {
             // we do not need meta cluster ws components when k3s ws is enabled
@@ -412,7 +410,7 @@ export async function deployToDev(deploymentConfig: DeploymentConfig, workspaceF
         }
 
         exec(`helm dependencies up`);
-        exec(`/usr/local/bin/helm3 upgrade --install --timeout 10m -f ../.werft/values.nodeAffinities.yaml -f ../.werft/values.dev.yaml ${flags} ${helmInstallName} .`);
+        exec(`/usr/local/bin/helm3 upgrade --install --timeout 10m -f ../.werft/${nodeAffinityValues} -f ../.werft/values.dev.yaml ${flags} ${helmInstallName} .`);
         exec(`kubectl apply -f ../.werft/jaeger.yaml`);
 
         werft.log('helm', 'installing Sweeper');

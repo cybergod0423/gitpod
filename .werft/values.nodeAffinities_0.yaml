@@ -3,8 +3,13 @@ affinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
       - matchExpressions:
-        - key: gitpod.io/workload_meta
+        - key: gitpod.io/service_0
           operator: Exists
+
+components:
+  workspace:
+    affinity:
+      default: gitpod.io/workspace_0
 
 # Sub-Charts
 
@@ -14,7 +19,7 @@ rabbitmq:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
         - matchExpressions:
-          - key: gitpod.io/workload_meta
+          - key: gitpod.io/service_0
             operator: Exists
 
 mysql:
@@ -24,7 +29,7 @@ mysql:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
           - matchExpressions:
-            - key: gitpod.io/workload_meta
+            - key: gitpod.io/service_0
               operator: Exists
 
 minio:
@@ -33,5 +38,5 @@ minio:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
         - matchExpressions:
-          - key: gitpod.io/workload_meta
+          - key: gitpod.io/service_0
             operator: Exists
