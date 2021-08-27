@@ -7,6 +7,17 @@ affinity:
           operator: Exists
 
 components:
+
+  wsDaemon:
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: gitpod.io/workspace_0
+              operator: Exists
+
+
   workspace:
     affinity:
       default: gitpod.io/workspace_0
