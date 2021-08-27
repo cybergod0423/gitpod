@@ -17,6 +17,15 @@ components:
             - key: gitpod.io/workspace_0
               operator: Exists
 
+  registryFacade:
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: gitpod.io/workspace_0
+              operator: Exists
+
 
   workspace:
     affinity:
