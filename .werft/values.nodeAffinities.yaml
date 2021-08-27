@@ -10,7 +10,7 @@ components:
 
   workspace:
     affinity:
-      default: "gitpod.io/workload_workspace"
+      default: "gitpod.io/workspace_only"
 
 
 # Sub-Charts

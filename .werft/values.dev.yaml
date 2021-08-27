@@ -10,13 +10,7 @@ certificatesSecret:
   secretName: proxy-config-certificates
 version: not-set
 imagePullPolicy: Always
-affinity:
-  nodeAffinity:
-    requiredDuringSchedulingIgnoredDuringExecution:
-      nodeSelectorTerms:
-        - matchExpressions:
-          - key: gitpod.io/workload_meta
-            operator: Exists
+
 authProviders: []
 tracing:
   endoint: http://jaeger-collector:14268/api/traces
