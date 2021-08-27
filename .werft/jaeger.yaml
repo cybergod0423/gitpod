@@ -34,10 +34,8 @@ spec:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
         - matchExpressions:
-          - key: dev/workload
-            operator: In
-            values:
-            - workload
+          - key: gitpod.io/workload_meta
+            operator: Exists
   strategy: allInOne
   storage:
     options:

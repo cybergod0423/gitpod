@@ -15,10 +15,8 @@ affinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
         - matchExpressions:
-          - key: dev/workload
-            operator: In
-            values:
-              - workload
+          - key: gitpod.io/workload_meta
+            operator: Exists
 authProviders: []
 tracing:
   endoint: http://jaeger-collector:14268/api/traces
@@ -79,7 +77,7 @@ components:
     pullSecret:
       secretName: gcp-sa-registry-auth
     affinity:
-      default: "workspace_only"
+      default: "gitpod.io/workload_workspace"
     templates:
       default:
         spec:
@@ -223,10 +221,8 @@ minio:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
         - matchExpressions:
-          - key: dev/workload
-            operator: In
-            values:
-            - workload
+          - key: gitpod.io/workload_meta
+            operator: Exists
   resources:
     requests:
       # in preview envs, we want deployments to push scale-up early
@@ -240,10 +236,8 @@ mysql:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
           - matchExpressions:
-            - key: dev/workload
-              operator: In
-              values:
-              - workload
+            - key: gitpod.io/workload_meta
+              operator: Exists
     resources:
       requests:
         # in preview envs, we want deployments to push scale-up early
@@ -263,10 +257,8 @@ rabbitmq:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
         - matchExpressions:
-          - key: dev/workload
-            operator: In
-            values:
-            - workload
+          - key: gitpod.io/workload_meta
+            operator: Exists
   resources:
     requests:
       # in preview envs, we want deployments to push scale-up early
