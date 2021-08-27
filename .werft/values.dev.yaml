@@ -187,10 +187,10 @@ components:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
-              - key: dev/workload
+              - key: gitpod.io/workload_workspace
                 operator: In
                 values:
-                  - workload
+                  - true
     scaler:
       enabled: true
       controller:
