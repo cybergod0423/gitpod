@@ -14,11 +14,11 @@ affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
-      - matchExpressions:
-        - key: gitpod.io/workload_meta
-          operator: In
-          values:
-          - "true"
+        - matchExpressions:
+          - key: dev/workload
+            operator: In
+            values:
+              - workload
 authProviders: []
 tracing:
   endoint: http://jaeger-collector:14268/api/traces
@@ -226,7 +226,7 @@ minio:
           - key: dev/workload
             operator: In
             values:
-            - "workload"
+            - workload
   resources:
     requests:
       # in preview envs, we want deployments to push scale-up early
@@ -243,7 +243,7 @@ mysql:
             - key: dev/workload
               operator: In
               values:
-              - "workload"
+              - workload
     resources:
       requests:
         # in preview envs, we want deployments to push scale-up early
@@ -266,7 +266,7 @@ rabbitmq:
           - key: dev/workload
             operator: In
             values:
-            - "workload"
+            - workload
   resources:
     requests:
       # in preview envs, we want deployments to push scale-up early
