@@ -182,6 +182,11 @@ components:
       - /run/containerd/io.containerd.runtime.v2.task/k8s.io
 
   wsScheduler:
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
     scaler:
       enabled: true
       controller:
