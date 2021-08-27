@@ -187,6 +187,10 @@ components:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
+              - key: dev/workload
+                operator: In
+                values:
+                  - workload
     scaler:
       enabled: true
       controller:
