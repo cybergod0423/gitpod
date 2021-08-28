@@ -478,7 +478,7 @@ func (b *Bastion) connectTunnelClient(ctx context.Context, ws *Workspace) error 
 
 func newTunnelClient(ctx context.Context, ws *Workspace, reconnecting *gitpod.ReconnectingWebsocket) (client *TunnelClient, closed chan struct{}, err error) {
 	logrus.WithField("workspace", ws.WorkspaceID).Info("tunnel: trying to connect ssh client...")
-	err = reconnecting.EnsureConnection(func(conn *gitpod.WebsocketConnection) (bool, error) {
+	err = reconnecting.EnsureConnection(ctx, func(conn *gitpod.WebsocketConnection) (bool, error) {
 		id, err := uuid.NewRandom()
 		if err != nil {
 			return false, err

@@ -64,10 +64,12 @@ func (rc *ReconnectingWebsocket) Close() error {
 // Returns only if connection is permanently failed
 // If the passed handler returns false as closed then err is returned to the client,
 // otherwise err is treated as a connection error, and new conneciton is provided.
-func (rc *ReconnectingWebsocket) EnsureConnection(handler func(conn *WebsocketConnection) (closed bool, err error)) error {
+func (rc *ReconnectingWebsocket) EnsureConnection(ctx context.Context, handler func(conn *WebsocketConnection) (closed bool, err error)) error {
 	for {
 		connCh := make(chan *WebsocketConnection, 1)
 		select {
+		case <-ctx.Done():
+			return ctx.Err()
 		case <-rc.closedCh:
 			return errors.New("closed")
 		case rc.connCh <- connCh:
@@ -78,6 +80,8 @@ func (rc *ReconnectingWebsocket) EnsureConnection(handler func(conn *WebsocketCo
 			return err
 		}
 		select {
+		case <-ctx.Done():
+			return ctx.Err()
 		case <-rc.closedCh:
 			return errors.New("closed")
 		case rc.errCh <- err:
@@ -105,7 +109,8 @@ func isJSONError(err error) bool {
 // WriteObject writes the JSON encoding of v as a message.
 // See the documentation for encoding/json Marshal for details about the conversion of Go values to JSON.
 func (rc *ReconnectingWebsocket) WriteObject(v interface{}) error {
-	return rc.EnsureConnection(func(conn *WebsocketConnection) (bool, error) {
+	// TODO(rl): Pass context in? Mismatch with jsonrpc interface is an issue
+	return rc.EnsureConnection(context.Background(), func(conn *WebsocketConnection) (bool, error) {
 		err := conn.WriteJSON(v)
 		closed := err != nil && !isJSONError(err)
 		return closed, err
@@ -115,7 +120,8 @@ func (rc *ReconnectingWebsocket) WriteObject(v interface{}) error {
 // ReadObject reads the next JSON-encoded message from the connection and stores it in the value pointed to by v.
 // See the documentation for the encoding/json Unmarshal function for details about the conversion of JSON to a Go value.
 func (rc *ReconnectingWebsocket) ReadObject(v interface{}) error {
-	return rc.EnsureConnection(func(conn *WebsocketConnection) (bool, error) {
+	// TODO(rl): Pass context in? Mismatch with jsonrpc interface is an issue
+	return rc.EnsureConnection(context.Background(), func(conn *WebsocketConnection) (bool, error) {
 		err := conn.ReadJSON(v)
 		closed := err != nil && !isJSONError(err)
 		return closed, err
